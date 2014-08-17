@@ -177,9 +177,10 @@ class RectTool(Tool):
             
     def addPos(self, x, y):
         if self.obj is None: return
-        topLeft = numpy.array([self.obj.rect.left, self.obj.rect.top])
-        pos = numpy.array([x, y])
+        topLeft = numpy.array([self.obj.rect.left, self.obj.rect.top]) 
+        pos = numpy.array([x, y]) - self.camera.pos
         dim = pos - topLeft
+        print dim
         if dim[0] > 0 and dim[1] > 0:
             self.obj.setSize(dim[0], dim[1])
             self.obj.rect.topleft = topLeft
