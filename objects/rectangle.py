@@ -22,11 +22,13 @@ class Rectangle(BaseObject):
         self.rect.width = width
         self.rect.height = height
     
-    def activate(self):
-        self.visible = not self.default
+class Scribble(BaseObject):
+    def __init__(self, d, game):
+        BaseObject.__init__(self, d, game)
+        self.rect = d["wrect"]
+        self.image = d["image"]
 
-    def deactivate(self):
-        self.visible = self.default
-
-    def reset(self):
-        pass
+    def setSurface(self, surface):
+        self.image = surface.convert()
+        self.rect.width = surface.get_width()
+        self.rect.height = surface.get_height()

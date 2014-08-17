@@ -157,15 +157,21 @@ class Tool(object):
         self.camera = viewer.camera
         self.obj = None
     
+    def startPos(self, x, y):
+        pass
+    
+    def addPos(self, x, y):
+        pass
+    
     def end(self):
         self.obj = None
 
 class RectTool(Tool):
     def __init__(self, viewer):
-        Tool.__init__(self, "Rectangle", viewer)
+        Tool.__init__(self, "rectangle", viewer)
     
     def startPos(self, x, y):
-        self.obj = objects.Rectangle(lf.Platform(x, y, 10, 10), self)
+        self.obj = objects.Rectangle(lf.Platform(x, y, 10, 10), self.viewer)
         return self.obj
             
     def addPos(self, x, y):
@@ -178,6 +184,26 @@ class RectTool(Tool):
             self.obj.rect.topleft = topLeft
             self.obj.pos = numpy.array(self.obj.rect.center) + self.camera.pos
 
+class PenTool(Tool):
+    def __init__(self, viewer):
+        Tool.__init__(self, "pen", viewer)
+        self.lineWidth = 3
+        self.color = (0,0,0)
+    
+    def startPos(self, x, y):
+        self.lineStartPos = (x, y)
+        surface = pygame.Surface(self.viewer.screen.get_size())
+        surface.fill((255,0,255))
+        self.surface = surface
+        self.obj = objects.Scribble({"wrect": pygame.Rect(x, y, 100, 100), "image": surface.convert()}, self.viewer) 
+        return self.obj
+    
+    def addPos(self, x, y):
+        if self.obj is None: return
+        pos = (x,y)
+        pygame.draw.line(self.surface, self.color, self.lineStartPos, pos, self.lineWidth)
+        self.lineStartPos = pos
+        self.obj.setSurface(self.surface)
 
 class WhiteboardFrame(wx.Frame):
     def __init__(self, parent, ID, strTitle, tplSize):
@@ -202,19 +228,19 @@ class WhiteboardFrame(wx.Frame):
         
         toolbar = wx.Panel(self, -1)
         self.toolbar = toolbar
-        tools = [RectTool(self.viewer)]
+        tools = [PenTool(self.viewer), RectTool(self.viewer)]
         for tool in tools:
             btn = wx.Button(toolbar, label=tool.name)
-            self.Bind(wx.EVT_BUTTON, lambda evt:self.onSelectTool(tool), btn)
+            self.Bind(wx.EVT_BUTTON, lambda evt, tool=tool: self.onSelectTool(tool), btn)
         
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.pnlSDL, 1, flag=wx.EXPAND)
         sizer.Add(toolbar, flag=wx.EXPAND | wx.BOTTOM | wx.TOP, border=0)
         self.SetSizer(sizer)
 
-
     def onSelectTool(self, tool):
         self.viewer.activeTool = tool
+        print "selected tool %s" % tool.name
 
     def onOpen(self, event):
         dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.lvl", wx.OPEN)

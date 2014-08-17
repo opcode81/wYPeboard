@@ -10,6 +10,7 @@ class Canvas(LayeredRenderer):
 
         self.groups = {}
         self.platforms = self.addGroup(Rectangle)
+        self.scribbles = self.addGroup(Scribble)
         #self.exits = self.addGroup(Exit)
         #self.portals = self.addGroup(Portal)
         '''
