@@ -269,16 +269,23 @@ class WhiteboardFrame(wx.Frame):
 
         self.viewer = self.pnlSDL.viewer
         
-        toolbar = wx.Panel(self, -1)
+        toolbar = wx.Panel(self)
         self.toolbar = toolbar
-        tools = [PenTool(self.viewer), RectTool(self.viewer)]
-        for tool in tools:
+        tools = [
+             PenTool(self.viewer),
+             RectTool(self.viewer)
+        ]
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        for i, tool in enumerate(tools):
+            print "init tool %s" % tool.name
             btn = wx.Button(toolbar, label=tool.name)
             self.Bind(wx.EVT_BUTTON, lambda evt, tool=tool: self.onSelectTool(tool), btn)
-        
+            box.Add(btn)
+        toolbar.SetSizer(box)
+            
         sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(toolbar, flag=wx.EXPAND | wx.BOTTOM, border=0)
         sizer.Add(self.pnlSDL, 1, flag=wx.EXPAND)
-        sizer.Add(toolbar, flag=wx.EXPAND | wx.BOTTOM | wx.TOP, border=0)
         self.SetSizer(sizer)
 
     def onSelectTool(self, tool):
