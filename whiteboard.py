@@ -17,7 +17,7 @@ global objects
 
 
 class SDLPanel(wx.Panel):
-    def __init__(self,parent,ID,tplSize):
+    def __init__(self, parent, ID, tplSize):
         global pygame, level, renderer, objects
         wx.Panel.__init__(self, parent, ID, size=tplSize)
         self.Fit()
@@ -25,7 +25,7 @@ class SDLPanel(wx.Panel):
         # initialize pygame-related stuff
         os.environ['SDL_WINDOWID'] = str(self.GetHandle())
         os.environ['SDL_VIDEODRIVER'] = 'windib'       
-        import pygame # this has to happen after setting the environment variables.
+        import pygame  # this has to happen after setting the environment variables.
         import canvas
         import renderer
         import objects
@@ -35,8 +35,8 @@ class SDLPanel(wx.Panel):
         # initialize level viewer
         self.screen = screen
         self.viewer = Viewer(screen, tplSize)
-        #self.levelViewer.setLevel(level.Level(os.path.join("assets", "levels", "0.p"), self.levelViewer))
-        #self.levelViewer.setLevel(level.Level(os.path.join("assets", "levels", "test.lvl"), self.levelViewer))
+        # self.levelViewer.setLevel(level.Level(os.path.join("assets", "levels", "0.p"), self.levelViewer))
+        # self.levelViewer.setLevel(level.Level(os.path.join("assets", "levels", "test.lvl"), self.levelViewer))
         self.viewer.setCanvas(canvas.Canvas(self.viewer))
         
         # start pygame thread
@@ -48,7 +48,7 @@ class SDLPanel(wx.Panel):
 
 class Camera(object):
     def __init__(self, pos, game):
-        self.translate = numpy.array([-game.width/2, -game.height/2])
+        self.translate = numpy.array([-game.width / 2, -game.height / 2])
         self.pos = pos + self.translate
         
     def update(self, game):        
@@ -67,7 +67,7 @@ class Viewer(object):
     def setCanvas(self, level):
         self.renderer = renderer.GameRenderer(self)
         self.level = level
-        self.camera = Camera((0,0), self)        
+        self.camera = Camera((0, 0), self)        
         self.renderer.add(self.level)
         self.avatars = pygame.sprite.Group()
         
@@ -87,7 +87,7 @@ class Viewer(object):
         try:
             while self.running:
                 for event in pygame.event.get():
-                    #log(event)
+                    # log(event)
                     
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         x, y = event.pos
@@ -117,14 +117,14 @@ class Viewer(object):
         self.scroll = True
     
     def onLeftMouseButtonDown(self, x, y):
-        if self.activeTool is None: # select object
-            matches = filter(lambda o: o.rect.collidepoint((x,y)), self.level.sprites())
+        if self.activeTool is None:  # select object
+            matches = filter(lambda o: o.rect.collidepoint((x, y)), self.level.sprites())
             if len(matches) > 0:
                 self.selectedObject = matches[0]
                 log("selected", self.selectedObject)
                 
         else:
-            pos = numpy.array([x,y]) + self.camera.pos
+            pos = numpy.array([x, y]) + self.camera.pos
             createdObject = self.activeTool.startPos(pos[0], pos[1])
             if createdObject is not None:                          
                 self.selectedObject = createdObject 
@@ -136,19 +136,20 @@ class Viewer(object):
     def onLeftMouseButtonUp(self):
         if self.activeTool is not None:
             self.activeTool.end()
-        self.activeTool = None
+        #self.activeTool = None
         self.selectedObject = None
     
     def onMouseMove(self, x, y, dx, dy):
         if self.scroll:                     
             self.camera.offset(numpy.array([-dx, -dy]))
             
-        elif self.activeTool is None: # move selected object
+        elif self.activeTool is None:  # move selected object
             if self.selectedObject is not None:
                 self.selectedObject.offset(dx, dy)
                 
         else: 
-            self.activeTool.addPos(x, y)
+            pos = numpy.array([x, y]) + self.camera.pos
+            self.activeTool.addPos(*pos)
 
 class Tool(object):
     def __init__(self, name, viewer):
@@ -177,7 +178,7 @@ class RectTool(Tool):
     def addPos(self, x, y):
         if self.obj is None: return
         topLeft = numpy.array([self.obj.rect.left, self.obj.rect.top])
-        pos = numpy.array([x,y])
+        pos = numpy.array([x, y])
         dim = pos - topLeft
         if dim[0] > 0 and dim[1] > 0:
             self.obj.setSize(dim[0], dim[1])
@@ -188,22 +189,64 @@ class PenTool(Tool):
     def __init__(self, viewer):
         Tool.__init__(self, "pen", viewer)
         self.lineWidth = 3
-        self.color = (0,0,0)
+        self.margin = 2*self.lineWidth
+        self.color = (0, 0, 0)
     
     def startPos(self, x, y):
-        self.lineStartPos = (x, y)
-        surface = pygame.Surface(self.viewer.screen.get_size())
-        surface.fill((255,0,255))
+        self.lineStartPos = numpy.array([x, y])
+        surface = pygame.Surface((self.margin, self.margin))#, pygame.SRCALPHA)
+        surface.fill((255, 0, 255))
+        surface.set_colorkey((255, 0, 255))
         self.surface = surface
-        self.obj = objects.Scribble({"wrect": pygame.Rect(x, y, 100, 100), "image": surface.convert()}, self.viewer) 
+        self.translateOrigin = numpy.array([-x, -y])
+        self.obj = objects.Scribble({"wrect": pygame.Rect(x - self.margin / 2, y - self.margin / 2, 1, 1), "image": surface.convert()}, self.viewer)
+        self.minX = self.maxX = x
+        self.minY = self.maxY = y 
         return self.obj
     
     def addPos(self, x, y):
         if self.obj is None: return
-        pos = (x,y)
-        pygame.draw.line(self.surface, self.color, self.lineStartPos, pos, self.lineWidth)
-        self.lineStartPos = pos
+        
+        # determine growth
+        print "\nminX=%d maxX=%d" % (self.minX, self.maxX)
+        print "x=%d y=%d" % (x,y)        
+        growRight = x - self.maxX if x > self.maxX else 0
+        growLeft = self.minX - x if x < self.minX else 0
+        growBottom = y - self.maxY if y > self.maxY else 0
+        growTop = self.minY - y if y < self.minY else 0
+        print "grow: right=%d left=%d top=%d bottom=%d" % (growRight, growLeft, growTop, growBottom)
+        self.maxX = max(self.maxX, x)
+        self.maxY = max(self.maxY, y)
+        self.minX = min(self.minX, x)
+        self.minY = min(self.minY, y)
+        print "new: minX=%d maxX=%d" % (self.minX, self.maxX)
+        
+        # create new larger surface and copy old surface content
+        margin = self.margin
+        oldWidth = self.surface.get_width() 
+        oldHeight = self.surface.get_height() 
+        newWidth = oldWidth + growLeft + growRight
+        newHeight = oldHeight + growBottom + growTop
+        print "newDim: (%d, %d)" % (newWidth, newHeight)
+        surface = pygame.Surface((newWidth, newHeight))#, pygame.SRCALPHA)
+        surface.fill((255, 0, 255))
+        surface.set_colorkey((255, 0, 255))
+        surface.blit(self.surface, (growLeft, growTop))
+        self.surface = surface
+        
+        # apply new surface and translate pos
         self.obj.setSurface(self.surface)
+        self.obj.offset(-growLeft, -growTop)
+        
+        # draw line
+        self.translateOrigin = -self.obj.pos + numpy.array([-margin, -margin])
+        print "translateOrigin=%s" % str(self.translateOrigin) 
+        marginTranslate = numpy.array([margin, margin])
+        pos1 = self.lineStartPos + self.translateOrigin + marginTranslate 
+        pos2 = numpy.array([x, y]) + self.translateOrigin + marginTranslate
+        print "drawing from %s to %s" % (str(pos1), str(pos2))
+        pygame.draw.line(self.surface, self.color, pos1, pos2, self.lineWidth)
+        self.lineStartPos = numpy.array([x, y])        
 
 class WhiteboardFrame(wx.Frame):
     def __init__(self, parent, ID, strTitle, tplSize):
@@ -268,6 +311,6 @@ class WhiteboardFrame(wx.Frame):
 
 if __name__ == '__main__':
     app = wx.PySimpleApp()
-    frame = WhiteboardFrame(None, wx.ID_ANY, "wYPeboard", (800,600))
+    frame = WhiteboardFrame(None, wx.ID_ANY, "wYPeboard", (800, 600))
     frame.Show()
     app.MainLoop()

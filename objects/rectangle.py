@@ -30,5 +30,9 @@ class Scribble(BaseObject):
 
     def setSurface(self, surface):
         self.image = surface.convert()
-        self.rect.width = surface.get_width()
-        self.rect.height = surface.get_height()
+        #left = self.rect.left
+        #top = self.rect.top
+        #self.rect.width = surface.get_width()
+        #self.rect.height = surface.get_height()
+        #self.rect.left = left
+        #self.rect.top = top
