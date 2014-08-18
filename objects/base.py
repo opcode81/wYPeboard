@@ -18,16 +18,20 @@ class BaseObject(sprite.Sprite, EventHandler):
             self.persistentMembers = persistentMembers
         
         self.persistentMembers.append("wrect")
+        self.persistentMembers.append("pos")
         
         sprite.Sprite.__init__(self, *groups)
         EventHandler.__init__(self, game)
         
         evalTag = "_EVAL_:"
         for member in self.persistentMembers:
-            self.__dict__[member] = self._deserializeValue(member, d[member])
+            if member in d:
+                self.__dict__[member] = self._deserializeValue(member, d[member])
         
         self.rect = self.wrect.copy()
-        self.pos = self.rect.center = numpy.array(self.wrect.center)        
+        
+        if not hasattr(self, "pos"):
+            self.pos = self.rect.center = numpy.array(self.wrect.center)        
         
     def update(self, game):
         # update the sprite's drawing position relative to the camera
@@ -66,6 +70,8 @@ class BaseObject(sprite.Sprite, EventHandler):
     def _serializeValue(self, name, value):
         if name == "wrect":
             return self._stringToEval("pygame.Rect(%d, %d, %d, %d)" % (self.rect.left, self.rect.top, self.rect.width, self.rect.height))
+        if name == "pos":
+            return self._stringToEval("numpy.array([%s, %s])" % (str(self.pos[0]), str(self.pos[1])))
         return value
 
     def serialize(self):
