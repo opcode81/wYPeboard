@@ -28,11 +28,13 @@ class BaseObject(sprite.Sprite):
         self.rect = self.wrect.copy()
         
         if not hasattr(self, "pos"):
-            self.pos = self.rect.center = numpy.array(self.wrect.center)        
+            self.pos = self.rect.topleft = numpy.array(self.wrect.topleft)        
         
     def update(self, game):
         # update the sprite's drawing position relative to the camera
-        self.rect.center = self.pos - game.camera.pos
+        #self.rect.center = self.pos - game.camera.pos
+        self.rect.topleft = self.pos - game.camera.pos
+
     
     def collide(self, group, doKill=False, collided=None):
         return sprite.spritecollide(self, group, doKill, collided)

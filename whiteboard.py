@@ -5,7 +5,6 @@ import traceback
 import sys
 import numpy
 from debug import log
-import levelformat as lf
 from pprint import pprint
 import pickle
 
@@ -133,6 +132,10 @@ class Viewer(object):
             if obj is not None:
                 obj.offset(*offset)
     
+    def addUser(self, name):
+        sprite = None
+        return sprite
+    
     def onRightMouseButtonDown(self, x, y):
         self.scroll = True
     
@@ -226,7 +229,7 @@ class RectTool(Tool):
         Tool.__init__(self, "rectangle", viewer)
     
     def startPos(self, x, y):
-        self.obj = objects.Rectangle(lf.Platform(x, y, 10, 10), self.viewer)
+        self.obj = objects.Rectangle({"wrect": pygame.Rect(x, y, 10, 10)}, self.viewer)
         return self.obj
             
     def addPos(self, x, y):
@@ -355,6 +358,7 @@ class Whiteboard(wx.Frame):
         self.frame_menubar.Append(self.file_menu, "File")
 
         self.viewer = self.pnlSDL.viewer
+        self.users = {}
         
         toolbar = wx.Panel(self)
         self.toolbar = toolbar
@@ -425,6 +429,10 @@ class Whiteboard(wx.Frame):
     
     def moveObjects(self, offset, *objectIds):
         self.viewer.moveObjects(offset, *objectIds)
+        
+    def addUser(self, name):
+        pointer = self.viewer.addUser(name)
+        self.users[name] = pointer
 
     def errorDialog(self, errormessage):
         """Display a simple error dialog.
