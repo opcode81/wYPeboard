@@ -251,14 +251,12 @@ class RectTool(Tool):
         print dim
         if dim[0] > 0 and dim[1] > 0:
             self.obj.setSize(dim[0], dim[1])
-            self.obj.rect.topleft = topLeft
-            self.obj.pos = numpy.array(self.obj.rect.center) + self.camera.pos
 
     def end(self):
         if self.obj is not None: self.app.onObjectCreationCompleted(self.obj)
         super(RectTool, self).end()
 
-class EraseTool(Tool):
+class EraserTool(Tool):
     def __init__(self, viewer):
         Tool.__init__(self, "erase", viewer)
 
@@ -376,7 +374,7 @@ class Whiteboard(wx.Frame):
              SelectTool(self.viewer),
              PenTool(self.viewer),
              RectTool(self.viewer),
-             EraseTool(self.viewer)
+             EraserTool(self.viewer)
         ]
         box = wx.BoxSizer(wx.HORIZONTAL)
         for i, tool in enumerate(tools):

@@ -28,6 +28,7 @@ class BaseObject(sprite.Sprite):
         self.rect = self.wrect.copy()
         
         if not hasattr(self, "pos"):
+            #self.pos = self.rect.center = numpy.array(self.wrect.center)
             self.pos = self.rect.topleft = numpy.array(self.wrect.topleft)        
         
     def update(self, game):
