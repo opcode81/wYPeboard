@@ -106,12 +106,13 @@ class Image(BaseObject):
         format = "RGBA"
         if name == "image":
             s = pygame.image.tostring(self.image, format)
-            return (s, self.image.get_size(), format)
+            cs = s.encode("zlib")
+            return (cs, self.image.get_size(), format)
         return super(Image, self)._serializeValue(name, value)
 
     def _deserializeValue(self, name, value):
         if name == "image" and type(value) == tuple:
-            return pygame.image.frombuffer(*value)
+            return pygame.image.frombuffer(value[0].decode("zlib"), *value[1:])
         return super(Image, self)._deserializeValue(name, value)
 
 class ImageFromResource(Image):
