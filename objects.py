@@ -114,10 +114,6 @@ class Image(BaseObject):
             return pygame.image.frombuffer(*value)
         return super(Image, self)._deserializeValue(name, value)
 
-    def update(self, game):
-        # update the sprite's drawing position relative to the camera
-        self.rect.topleft = self.pos - game.camera.pos
-        
 class ImageFromResource(Image):
     def __init__(self, filename, d, game):
         Image.__init__(self, d, game)
