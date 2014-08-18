@@ -25,14 +25,12 @@ class Rectangle(BaseObject):
 class Scribble(BaseObject):
     def __init__(self, d, game):
         BaseObject.__init__(self, d, game)
-        self.rect = d["wrect"]
         self.image = d["image"]
 
     def setSurface(self, surface):
         self.image = surface.convert()
-        #left = self.rect.left
-        #top = self.rect.top
-        #self.rect.width = surface.get_width()
-        #self.rect.height = surface.get_height()
-        #self.rect.left = left
-        #self.rect.top = top
+        self.rect = self.image.get_rect()
+
+    def update(self, game):
+        # update the sprite's drawing position relative to the camera
+        self.rect.topleft = self.pos - game.camera.pos

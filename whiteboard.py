@@ -224,7 +224,7 @@ class PenTool(Tool):
         surface.set_colorkey((255, 0, 255))
         self.surface = surface
         self.translateOrigin = numpy.array([-x, -y])
-        self.obj = objects.Scribble({"wrect": pygame.Rect(x - self.margin / 2, y - self.margin / 2, 1, 1), "image": surface.convert()}, self.viewer)
+        self.obj = objects.Scribble({"wrect": pygame.Rect(x - self.margin, y - self.margin, self.margin, self.margin), "image": surface.convert()}, self.viewer)
         self.minX = self.maxX = x
         self.minY = self.maxY = y 
         return self.obj
@@ -275,7 +275,7 @@ class PenTool(Tool):
 
 class WhiteboardFrame(wx.Frame):
     def __init__(self, parent, ID, strTitle, tplSize):
-        wx.Frame.__init__(self, parent, ID, strTitle, size=tplSize)
+        wx.Frame.__init__(self, parent, ID, strTitle, size=tplSize, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^ wx.MAXIMIZE_BOX)
         self.pnlSDL = SDLPanel(self, -1, tplSize)
         
         # Menu Bar        
