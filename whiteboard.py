@@ -172,6 +172,29 @@ class Tool(object):
     def end(self):
         self.obj = None
 
+class SelectTool(Tool):
+    def __init__(self, viewer):
+        Tool.__init__(self, "select", viewer)
+        self.selectedObjects = None
+    
+    def startPos(self, x, y):
+        self.rectTopLeft = self.screenPoint(x, y)
+            
+    def addPos(self, x, y):
+        self.rectBottomRight = self.screenPoint(x, y)
+        if self.selectedObjects is not None:
+            offset = self.rectBottomRight - self.rectTopLeft
+            self.rectTopLeft = self.rectBottomRight
+            for o in self.selectedObjects:
+                o.offset(*offset) 
+    
+    def end(self):
+        if self.selectedObjects is None:
+            width = self.rectBottomRight[0] - self.rectTopLeft[0]
+            height = self.rectBottomRight[1] - self.rectTopLeft[1]
+            self.selectedObjects = filter(lambda o: o.rect.colliderect(pygame.Rect(self.rectTopLeft[0], self.rectTopLeft[1], width, height)), self.viewer.canvas.sprites())
+            print self.selectedObjects
+
 class RectTool(Tool):
     def __init__(self, viewer):
         Tool.__init__(self, "rectangle", viewer)
@@ -297,6 +320,7 @@ class WhiteboardFrame(wx.Frame):
         toolbar = wx.Panel(self)
         self.toolbar = toolbar
         tools = [
+             SelectTool(self.viewer),
              PenTool(self.viewer),
              RectTool(self.viewer),
              EraseTool(self.viewer)
