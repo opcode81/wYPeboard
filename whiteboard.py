@@ -35,15 +35,14 @@ class SDLPanel(wx.Panel):
         # initialize level viewer
         self.screen = screen
         self.viewer = Viewer(screen, tplSize)
-        # self.levelViewer.setLevel(level.Level(os.path.join("assets", "levels", "0.p"), self.levelViewer))
-        # self.levelViewer.setLevel(level.Level(os.path.join("assets", "levels", "test.lvl"), self.levelViewer))
-        self.viewer.setCanvas(canvas.Canvas(self.viewer))
+        self.canvas = canvas.Canvas(self.viewer)
+        self.viewer.setCanvas(self.canvas)
         
         # start pygame thread
         thread.start_new_thread(self.viewer.mainLoop, ())
 
     def __del__(self):
-        self.levelViewer.running = False
+        self.viewer.running = False
 
 
 class Camera(object):
@@ -64,11 +63,11 @@ class Viewer(object):
         self.width, self.height = size
         self.running = False
 
-    def setCanvas(self, level):
+    def setCanvas(self, canvas):
         self.renderer = renderer.GameRenderer(self)
-        self.level = level
+        self.canvas = canvas
         self.camera = Camera((0, 0), self)        
-        self.renderer.add(self.level)
+        self.renderer.add(self.canvas)
         self.avatars = pygame.sprite.Group()
         
         self.scroll = False
@@ -118,17 +117,18 @@ class Viewer(object):
     
     def onLeftMouseButtonDown(self, x, y):
         if self.activeTool is None:  # select object
-            matches = filter(lambda o: o.rect.collidepoint((x, y)), self.level.sprites())
+            matches = filter(lambda o: o.rect.collidepoint((x, y)), self.canvas.sprites())
             if len(matches) > 0:
                 self.selectedObject = matches[0]
                 log("selected", self.selectedObject)
                 
         else:
+            self.activeTool.active = True
             pos = numpy.array([x, y]) + self.camera.pos
             createdObject = self.activeTool.startPos(pos[0], pos[1])
             if createdObject is not None:                          
                 self.selectedObject = createdObject 
-                self.level.add(createdObject)
+                self.canvas.add(createdObject)
     
     def onRightMouseButtonUp(self):
         self.scroll = False
@@ -136,6 +136,7 @@ class Viewer(object):
     def onLeftMouseButtonUp(self):
         if self.activeTool is not None:
             self.activeTool.end()
+            self.activeTool.active = False
         #self.activeTool = None
         self.selectedObject = None
     
@@ -147,7 +148,7 @@ class Viewer(object):
             if self.selectedObject is not None:
                 self.selectedObject.offset(dx, dy)
                 
-        else: 
+        elif self.activeTool.active: 
             pos = numpy.array([x, y]) + self.camera.pos
             self.activeTool.addPos(*pos)
 
@@ -157,12 +158,16 @@ class Tool(object):
         self.viewer = viewer
         self.camera = viewer.camera
         self.obj = None
+        self.active = False
     
     def startPos(self, x, y):
         pass
     
     def addPos(self, x, y):
         pass
+    
+    def screenPoint(self, x, y):
+        return numpy.array([x, y]) - self.camera.pos
     
     def end(self):
         self.obj = None
@@ -185,6 +190,25 @@ class RectTool(Tool):
             self.obj.setSize(dim[0], dim[1])
             self.obj.rect.topleft = topLeft
             self.obj.pos = numpy.array(self.obj.rect.center) + self.camera.pos
+
+class EraseTool(Tool):
+    def __init__(self, viewer):
+        Tool.__init__(self, "erase", viewer)
+
+    def startPos(self, x, y):
+        self.erase(x, y)
+    
+    def erase(self, x, y):
+        x, y = self.screenPoint(x, y)
+        sprites = self.viewer.canvas.sprites()
+        print sprites
+        matches = filter(lambda o: o.rect.collidepoint((x, y)), sprites)
+        print "eraser matches:", matches
+        for sprite in matches:
+            sprite.kill()
+
+    def addPos(self, x, y):
+        self.erase(x, y)
 
 class PenTool(Tool):
     def __init__(self, viewer):
@@ -274,7 +298,8 @@ class WhiteboardFrame(wx.Frame):
         self.toolbar = toolbar
         tools = [
              PenTool(self.viewer),
-             RectTool(self.viewer)
+             RectTool(self.viewer),
+             EraseTool(self.viewer)
         ]
         box = wx.BoxSizer(wx.HORIZONTAL)
         for i, tool in enumerate(tools):
@@ -290,6 +315,7 @@ class WhiteboardFrame(wx.Frame):
         self.SetSizer(sizer)
 
     def onSelectTool(self, tool):
+        tool.active = False
         self.viewer.activeTool = tool
         print "selected tool %s" % tool.name
 

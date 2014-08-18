@@ -30,7 +30,7 @@ class BaseObject(sprite.Sprite, EventHandler):
         return sprite.spritecollide(self, group, doKill, collided)
 
     def kill(self):
-        self.unbindAll()
+        #self.unbindAll()
         sprite.Sprite.kill(self)
 
     def offset(self, x, y):

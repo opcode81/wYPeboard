@@ -43,7 +43,7 @@ class Canvas(LayeredRenderer):
     
     def add(self, *objects):
         LayeredRenderer.add(self, *objects)
-            
+        '''    
         for object in objects:
             haveGroup = False
             for cls, group in self.groups.iteritems():
@@ -51,6 +51,7 @@ class Canvas(LayeredRenderer):
                     group.add(object)
                     haveGroup = True
             if not haveGroup: raise Exception("no group for " + str(object))
+            '''
     
     def saveFormat(self):
         return {
