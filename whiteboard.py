@@ -364,7 +364,8 @@ class WhiteboardFrame(wx.Frame):
             f.close()
 
     def onExit(self, event):
-        pass
+        self.viewer.running = False
+        sys.exit(0)
 
 
 if __name__ == '__main__':
