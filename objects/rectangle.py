@@ -14,8 +14,7 @@ class Rectangle(BaseObject):
                 self.group = None
         else:
             BaseObject.__init__(self, d, game)
-            rect = d["wrect"]
-            self.setSize(rect.width, rect.height)
+            self.setSize(self.rect.width, self.rect.height)
             
     def setSize(self, width, height):
         self.image = pygame.Surface((width, height)).convert()

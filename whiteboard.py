@@ -230,6 +230,10 @@ class RectTool(Tool):
             self.obj.rect.topleft = topLeft
             self.obj.pos = numpy.array(self.obj.rect.center) + self.camera.pos
 
+    def end(self):
+        self.app.onObjectCreationCompleted(self.obj)
+        super(RectTool, self).end()
+
 class EraseTool(Tool):
     def __init__(self, viewer):
         Tool.__init__(self, "erase", viewer)
@@ -318,10 +322,6 @@ class PenTool(Tool):
     def end(self):
         self.app.onObjectCreationCompleted(self.obj)
         super(PenTool, self).end()
-        #s = o.serialize()
-        #o2 = objects.objectFromString(s, self.viewer)
-        #self.viewer.canvas.add(o2)
-        #o2.offset(100, 50)
 
 class Whiteboard(wx.Frame):
     def __init__(self, strTitle, size=(800, 600)):
