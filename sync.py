@@ -62,26 +62,35 @@ class DispatchingWhiteboard(Whiteboard):
 				self.lastPing = t.time()
 				self.dispatch(ping = True)
 
-class Dispatcher(asyncore.dispatcher_with_send):
+class Dispatcher(asyncore.dispatcher):
 	def __init__(self, sock=None):
-		asyncore.dispatcher_with_send.__init__(self, sock=sock)
+		asyncore.dispatcher.__init__(self, sock=sock)
 		self.terminator = "\r\n\r\n$end$\r\n\r\n"
 		self.recvBuffer = ""
+		self.sendBuffer = ""
+	
+	def sendPart(self):
+		num_sent = 0
+		num_sent = asyncore.dispatcher.send(self, self.sendBuffer[:1024])
+		#print "sent %d of %d" % (num_sent, len(self.sendBuffer))
+		self.sendBuffer = self.sendBuffer[num_sent:]
 	
 	def send(self, data):
-		asyncore.dispatcher_with_send.send(self, data + self.terminator)
+		print "sending packet; size %d" % len(data)
+		#print data
+		self.sendBuffer += data + self.terminator
+		self.initiate_send()
 		
 	def initiate_send(self):
-		while len(self.out_buffer) > 0:
-			print "initiating send"
-			asyncore.dispatcher_with_send.initiate_send(self)
+		while len(self.sendBuffer) > 0:
+			self.sendPart()
 
 	def handle_read(self):
 		d = self.recv(8192)
 		if d == "": # connection closed from other end			
 			return
 		self.recvBuffer += d
-		print self.recvBuffer
+		#print self.recvBuffer
 		print "recvBuffer size: %d" % len(self.recvBuffer)
 		while True:
 			try:
@@ -117,7 +126,7 @@ class SyncServer(Dispatcher):
 		print "incoming connection from %s" % str(pair[1])
 		conn = DispatcherConnection(pair[0], self)
 		self.connections.append(conn)
-		conn.sendData("hello %s" % str(pair[1]))
+		#conn.sendData("hello %s" % str(pair[1]))
 
 	def dispatch(self, d, exclude=None):
 		print "dispatching %s to %d client(s)" % (str(d), len(self.connections) if exclude is None else len(self.connections)-1)
@@ -137,14 +146,10 @@ class DispatcherConnection(Dispatcher):
 		Dispatcher.__init__(self, sock=connection)
 		self.syncserver = server
 
-	def writable(self):
-		return bool(self.out_buffer)
-
-	def handle_write(self):
-		self.initiate_send()
-		
 	def handle_packet(self, packet):
 		d = packet
+		print "handling packet; size %d" % len(d)
+		print d
 		if d == "": # connection closed from other end			
 			return
 		d = pickle.loads(d)
