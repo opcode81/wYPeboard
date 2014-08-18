@@ -65,6 +65,7 @@ class Viewer(object):
         self.camera = Camera((0, 0), self)
         self.app = app        
         self.objectsById = {}
+        self.userCursors = {}
 
     def setCanvas(self, canvas):
         self.canvas = canvas
@@ -133,8 +134,15 @@ class Viewer(object):
                 obj.offset(*offset)
     
     def addUser(self, name):
-        sprite = None
+        sprite = objects.ImageFromResource(os.path.join("img", "HandPointer.png"), {"wrect": pygame.Rect(0, 0, 0, 0)}, self)
+        self.addObject(sprite)
+        self.userCursors[name] = sprite
         return sprite
+
+    def moveUserCursor(self, userName, pos):
+        sprite = self.userCursors.get(userName)
+        if sprite is not None:
+            sprite.pos = pos
     
     def onRightMouseButtonDown(self, x, y):
         self.scroll = True
@@ -165,6 +173,8 @@ class Viewer(object):
         self.selectedObject = None
     
     def onMouseMove(self, x, y, dx, dy):
+        pos = numpy.array([x, y]) + self.camera.pos 
+        
         if self.scroll:                     
             self.camera.offset(numpy.array([-dx, -dy]))
             
@@ -173,8 +183,9 @@ class Viewer(object):
                 self.selectedObject.offset(dx, dy)
                 
         elif self.activeTool.active: 
-            pos = numpy.array([x, y]) + self.camera.pos
             self.activeTool.addPos(*pos)
+        
+        self.app.onCursorMoved(pos)
 
 class Tool(object):
     def __init__(self, name, viewer):
@@ -358,7 +369,6 @@ class Whiteboard(wx.Frame):
         self.frame_menubar.Append(self.file_menu, "File")
 
         self.viewer = self.pnlSDL.viewer
-        self.users = {}
         
         toolbar = wx.Panel(self)
         self.toolbar = toolbar
@@ -421,6 +431,9 @@ class Whiteboard(wx.Frame):
 
     def onObjectsMoved(self, offset, *objectIds):
         pass
+
+    def onCursorMoved(self, pos):
+        pass
     
     def deleteObjects(self, *objectIds):
         deletedIds = self.viewer.deleteObjects(*objectIds)
@@ -431,8 +444,10 @@ class Whiteboard(wx.Frame):
         self.viewer.moveObjects(offset, *objectIds)
         
     def addUser(self, name):
-        pointer = self.viewer.addUser(name)
-        self.users[name] = pointer
+        self.viewer.addUser(name)
+    
+    def moveUserCursor(self, userName, pos):
+        self.viewer.moveUserCursor(userName, pos)
 
     def errorDialog(self, errormessage):
         """Display a simple error dialog.

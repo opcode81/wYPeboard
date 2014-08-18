@@ -38,6 +38,8 @@ class DispatchingWhiteboard(Whiteboard):
 		self.lastPing = t.time()
 		self.Centre()
 		self.Show()
+		self.lastCursorMoveTime = t.time()
+		self.userName = "user " + str(t.time())
 
 	def onObjectCreationCompleted(self, object):
 		self.dispatch(evt="addObject", args=(object.serialize(),))
@@ -47,6 +49,11 @@ class DispatchingWhiteboard(Whiteboard):
 
 	def onObjectsMoved(self, offset, *ids):
 		self.dispatch(evt="moveObjects", args=[offset] + list(ids))
+		
+	def onCursorMoved(self, pos):
+		now = t.time()
+		if now - self.lastCursorMoveTime > 0.3:
+			self.dispatch(evt="moveUserCursor", args=(self.userName, pos,))
 
 	def _deserialize(self, s):
 		return objects.deserialize(s, self.viewer)
@@ -105,7 +112,7 @@ class Dispatcher(asyncore.dispatcher):
 				break
 			packet = self.recvBuffer[:tpos]
 			print "received packet; size %d" % len(packet)
-			print packet
+			#print packet
 			self.handle_packet(packet)
 			self.recvBuffer = self.recvBuffer[tpos+len(self.terminator):]  
 	
@@ -132,7 +139,7 @@ class SyncServer(Dispatcher):
 		print "incoming connection from %s" % str(pair[1])
 		conn = DispatcherConnection(pair[0], self)
 		self.connections.append(conn)
-		#conn.sendData("hello %s" % str(pair[1]))
+		self.whiteboard.dispatch(evt="addUser", args=(self.whiteboard.userName,))
 
 	def dispatch(self, d, exclude=None):
 		numClients = len(self.connections) if exclude is None else len(self.connections)-1
@@ -157,7 +164,7 @@ class DispatcherConnection(Dispatcher):
 	def handle_packet(self, packet):
 		d = packet
 		print "handling packet; size %d" % len(d)
-		print d
+		#print d
 		if d == "": # connection closed from other end			
 			return
 		d = pickle.loads(d)
@@ -188,7 +195,7 @@ class SyncClient(Dispatcher):
 		self.connectedToServer = self.connectingToServer = False
 		self.connectToServer()
 		# create actual player
-		self.whiteboard = DispatchingWhiteboard("Sync'd VLC Client", self, False)
+		self.whiteboard = DispatchingWhiteboard("wYPeboard client", self, False)
 
 	def connectToServer(self):
 		print "connecting to %s..." % str(self.serverAddress)
@@ -200,9 +207,10 @@ class SyncClient(Dispatcher):
 		print "connected to %s" % str(self.serverAddress)
 		self.connectingToServer = False
 		self.connectedToServer = True
-		# immediately request current playback data
-		#self.player.dispatch(evt="OnQueryPlayLoc", args=())
-
+		
+		# register user
+		self.whiteboard.dispatch(evt="addUser", args=(self.whiteboard.userName,))
+		
 	def handle_packet(self, packet):
 		d = packet
 		if d == "": # server connection lost
