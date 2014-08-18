@@ -126,6 +126,12 @@ class Viewer(object):
                 del self.objectsById[id]
                 deletedIds.append(id)
         return deletedIds
+
+    def moveObjects(self, offset, *ids):
+        for id in ids:
+            obj = self.objectsById.get(id)
+            if obj is not None:
+                obj.offset(*offset)
     
     def onRightMouseButtonDown(self, x, y):
         self.scroll = True
@@ -195,11 +201,13 @@ class SelectTool(Tool):
     
     def startPos(self, x, y):
         self.pos1 = self.screenPoint(x, y)
+        self.offset = numpy.array([0, 0])
             
     def addPos(self, x, y):
         self.pos2= self.screenPoint(x, y)
         if self.selectedObjects is not None:
             offset = self.pos2 - self.pos1
+            self.offset += offset
             self.pos1 = self.pos2
             for o in self.selectedObjects:
                 o.offset(*offset) 
@@ -210,6 +218,8 @@ class SelectTool(Tool):
             height = self.pos2[1] - self.pos1[1]
             self.selectedObjects = filter(lambda o: o.rect.colliderect(pygame.Rect(self.pos1[0], self.pos1[1], width, height)), self.viewer.canvas.sprites())
             print self.selectedObjects
+        else:
+            self.app.onObjectsMoved(self.offset, *[o.id for o in self.selectedObjects])
 
 class RectTool(Tool):
     def __init__(self, viewer):
@@ -231,7 +241,7 @@ class RectTool(Tool):
             self.obj.pos = numpy.array(self.obj.rect.center) + self.camera.pos
 
     def end(self):
-        self.app.onObjectCreationCompleted(self.obj)
+        if self.obj is not None: self.app.onObjectCreationCompleted(self.obj)
         super(RectTool, self).end()
 
 class EraseTool(Tool):
@@ -320,7 +330,7 @@ class PenTool(Tool):
         self.lineStartPos = numpy.array([x, y])
     
     def end(self):
-        self.app.onObjectCreationCompleted(self.obj)
+        if self.obj is not None: self.app.onObjectCreationCompleted(self.obj)
         super(PenTool, self).end()
 
 class Whiteboard(wx.Frame):
@@ -404,11 +414,17 @@ class Whiteboard(wx.Frame):
     
     def onObjectsDeleted(self, *objectIds):
         pass
+
+    def onObjectsMoved(self, offset, *objectIds):
+        pass
     
     def deleteObjects(self, *objectIds):
         deletedIds = self.viewer.deleteObjects(*objectIds)
         if len(deletedIds) > 0:
             self.onObjectsDeleted(*deletedIds)
+    
+    def moveObjects(self, offset, *objectIds):
+        self.viewer.moveObjects(offset, *objectIds)
 
     def errorDialog(self, errormessage):
         """Display a simple error dialog.

@@ -45,6 +45,9 @@ class DispatchingWhiteboard(Whiteboard):
 	def onObjectsDeleted(self, *ids):
 		self.dispatch(evt="deleteObjects", args=ids)
 
+	def onObjectsMoved(self, offset, *ids):
+		self.dispatch(evt="moveObjects", args=[offset] + list(ids))
+
 	def _deserialize(self, s):
 		return objects.deserialize(s, self.viewer)
 	
