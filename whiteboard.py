@@ -275,7 +275,7 @@ class PenTool(Tool):
 
 class WhiteboardFrame(wx.Frame):
     def __init__(self, parent, ID, strTitle, tplSize):
-        wx.Frame.__init__(self, parent, ID, strTitle, size=tplSize, style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER ^ wx.MAXIMIZE_BOX)
+        wx.Frame.__init__(self, parent, ID, strTitle, size=tplSize, style=wx.DEFAULT_FRAME_STYLE & ~wx.RESIZE_BORDER & ~wx.MAXIMIZE_BOX)
         self.pnlSDL = SDLPanel(self, -1, tplSize)
         
         # Menu Bar        
