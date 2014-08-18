@@ -178,21 +178,21 @@ class SelectTool(Tool):
         self.selectedObjects = None
     
     def startPos(self, x, y):
-        self.rectTopLeft = self.screenPoint(x, y)
+        self.pos1 = self.screenPoint(x, y)
             
     def addPos(self, x, y):
-        self.rectBottomRight = self.screenPoint(x, y)
+        self.pos2= self.screenPoint(x, y)
         if self.selectedObjects is not None:
-            offset = self.rectBottomRight - self.rectTopLeft
-            self.rectTopLeft = self.rectBottomRight
+            offset = self.pos2 - self.pos1
+            self.pos1 = self.pos2
             for o in self.selectedObjects:
                 o.offset(*offset) 
     
     def end(self):
         if self.selectedObjects is None:
-            width = self.rectBottomRight[0] - self.rectTopLeft[0]
-            height = self.rectBottomRight[1] - self.rectTopLeft[1]
-            self.selectedObjects = filter(lambda o: o.rect.colliderect(pygame.Rect(self.rectTopLeft[0], self.rectTopLeft[1], width, height)), self.viewer.canvas.sprites())
+            width = self.pos2[0] - self.pos1[0]
+            height = self.pos2[1] - self.pos1[1]
+            self.selectedObjects = filter(lambda o: o.rect.colliderect(pygame.Rect(self.pos1[0], self.pos1[1], width, height)), self.viewer.canvas.sprites())
             print self.selectedObjects
 
 class RectTool(Tool):
