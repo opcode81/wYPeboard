@@ -41,6 +41,9 @@ class DispatchingWhiteboard(Whiteboard):
 
 	def onObjectCreationCompleted(self, object):
 		self.dispatch(evt="addObject", args=(object.serialize(),))
+	
+	def onObjectsDeleted(self, *ids):
+		self.dispatch(evt="deleteObjects", args=ids)
 
 	def _deserialize(self, s):
 		return objects.deserialize(s, self.viewer)
@@ -129,7 +132,9 @@ class SyncServer(Dispatcher):
 		#conn.sendData("hello %s" % str(pair[1]))
 
 	def dispatch(self, d, exclude=None):
-		print "dispatching %s to %d client(s)" % (str(d), len(self.connections) if exclude is None else len(self.connections)-1)
+		numClients = len(self.connections) if exclude is None else len(self.connections)-1
+		#print "dispatching %s to %d client(s)" % (str(d), numClients)
+		print "dispatching packet to %d clients" % numClients
 		for c in self.connections:
 			if c != exclude:
 				c.sendData(d)

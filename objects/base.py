@@ -1,3 +1,4 @@
+import time
 import pygame
 from pygame import sprite
 from events import EventHandler
@@ -14,16 +15,14 @@ class BaseObject(sprite.Sprite, EventHandler):
     
     def __init__(self, d, game, persistentMembers = None, *groups):
         if persistentMembers is None: persistentMembers = []
-        if not hasattr(self, "peristentMembers"):
-            self.persistentMembers = persistentMembers
-        
-        self.persistentMembers.append("wrect")
-        self.persistentMembers.append("pos")
+        self.persistentMembers = persistentMembers
+        self.persistentMembers.extend(["wrect", "pos", "id"])
         
         sprite.Sprite.__init__(self, *groups)
         EventHandler.__init__(self, game)
+
+        self.id = time.time()
         
-        evalTag = "_EVAL_:"
         for member in self.persistentMembers:
             if member in d:
                 self.__dict__[member] = self._deserializeValue(member, d[member])

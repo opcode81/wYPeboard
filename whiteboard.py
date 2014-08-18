@@ -65,6 +65,7 @@ class Viewer(object):
         self.renderer = renderer.GameRenderer(self)
         self.camera = Camera((0, 0), self)
         self.app = app        
+        self.objectsById = {}
 
     def setCanvas(self, canvas):
         self.canvas = canvas
@@ -113,7 +114,18 @@ class Viewer(object):
             traceback.print_tb(tb)
     
     def addObject(self, object):
+        self.objectsById[object.id] = object
         self.canvas.add(object)    
+    
+    def deleteObjects(self, *ids):
+        deletedIds = []
+        for id in ids:
+            obj = self.objectsById.get(id)
+            if obj is not None:
+                obj.kill()
+                del self.objectsById[id]
+                deletedIds.append(id)
+        return deletedIds
     
     def onRightMouseButtonDown(self, x, y):
         self.scroll = True
@@ -231,8 +243,11 @@ class EraseTool(Tool):
         print sprites
         matches = filter(lambda o: o.rect.collidepoint((x, y)), sprites)
         print "eraser matches:", matches
-        for sprite in matches:
-            sprite.kill()
+        if len(matches) > 0:
+            ids = [o.id for o in matches]
+            self.app.deleteObjects(*ids)
+            #for sprite in matches:
+            #    sprite.kill()
 
     def addPos(self, x, y):
         self.erase(x, y)
@@ -386,6 +401,14 @@ class Whiteboard(wx.Frame):
 
     def onObjectCreationCompleted(self, object):
         pass
+    
+    def onObjectsDeleted(self, *objectIds):
+        pass
+    
+    def deleteObjects(self, *objectIds):
+        deletedIds = self.viewer.deleteObjects(*objectIds)
+        if len(deletedIds) > 0:
+            self.onObjectsDeleted(*deletedIds)
 
     def errorDialog(self, errormessage):
         """Display a simple error dialog.
