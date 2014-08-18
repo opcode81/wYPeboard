@@ -34,7 +34,7 @@ class SDLPanel(wx.Panel):
         
         # initialize level viewer
         self.screen = screen
-        self.viewer = Viewer(screen, tplSize)
+        self.viewer = Viewer(screen, tplSize, parent)
         self.canvas = canvas.Canvas(self.viewer)
         self.viewer.setCanvas(self.canvas)
         
@@ -58,12 +58,13 @@ class Camera(object):
 
 
 class Viewer(object):
-    def __init__(self, screen, size):
+    def __init__(self, screen, size, app):
         self.screen = screen
         self.width, self.height = size
         self.running = False
         self.renderer = renderer.GameRenderer(self)
-        self.camera = Camera((0, 0), self)        
+        self.camera = Camera((0, 0), self)
+        self.app = app        
 
     def setCanvas(self, canvas):
         self.canvas = canvas
@@ -111,6 +112,9 @@ class Viewer(object):
             print v
             traceback.print_tb(tb)
     
+    def addObject(self, object):
+        self.canvas.add(object)    
+    
     def onRightMouseButtonDown(self, x, y):
         self.scroll = True
     
@@ -127,7 +131,7 @@ class Viewer(object):
             createdObject = self.activeTool.startPos(pos[0], pos[1])
             if createdObject is not None:                          
                 self.selectedObject = createdObject 
-                self.canvas.add(createdObject)
+                self.addObject(createdObject)
     
     def onRightMouseButtonUp(self):
         self.scroll = False
@@ -156,6 +160,7 @@ class Tool(object):
         self.name = name
         self.viewer = viewer
         self.camera = viewer.camera
+        self.app = viewer.app
         self.obj = None
         self.active = False
     
@@ -296,16 +301,18 @@ class PenTool(Tool):
         self.lineStartPos = numpy.array([x, y])
     
     def end(self):
-        o = self.obj
+        self.app.onObjectCreationCompleted(self.obj)
         super(PenTool, self).end()
         #s = o.serialize()
         #o2 = objects.objectFromString(s, self.viewer)
         #self.viewer.canvas.add(o2)
         #o2.offset(100, 50)
 
-class WhiteboardFrame(wx.Frame):
-    def __init__(self, parent, ID, strTitle, tplSize):
-        wx.Frame.__init__(self, parent, ID, strTitle, size=tplSize, style=wx.DEFAULT_FRAME_STYLE & ~wx.RESIZE_BORDER & ~wx.MAXIMIZE_BOX)
+class Whiteboard(wx.Frame):
+    def __init__(self, strTitle, size=(800, 600)):
+        parent = None
+        tplSize = size
+        wx.Frame.__init__(self, parent, wx.ID_ANY, strTitle, size=tplSize, style=wx.DEFAULT_FRAME_STYLE & ~wx.RESIZE_BORDER & ~wx.MAXIMIZE_BOX)
         self.pnlSDL = SDLPanel(self, -1, tplSize)
         
         # Menu Bar        
@@ -373,10 +380,22 @@ class WhiteboardFrame(wx.Frame):
     def onExit(self, event):
         self.viewer.running = False
         sys.exit(0)
+        
+    def addObject(self, object):
+        self.viewer.addObject(object)
+
+    def onObjectCreationCompleted(self, object):
+        pass
+
+    def errorDialog(self, errormessage):
+        """Display a simple error dialog.
+        """
+        edialog = wx.MessageDialog(self, errormessage, 'Error', wx.OK | wx.ICON_ERROR)
+        edialog.ShowModal()
 
 
 if __name__ == '__main__':
     app = wx.PySimpleApp()
-    frame = WhiteboardFrame(None, wx.ID_ANY, "wYPeboard", (800, 600))
+    frame = Whiteboard("wYPeboard")
     frame.Show()
     app.MainLoop()

@@ -5,7 +5,7 @@ import numpy
 import objects
 import pickle
 
-def objectFromString(s, game):
+def deserialize(s, game):
     d = pickle.loads(s)
     return eval("%s(d, game)" % d["class"])    
 
@@ -70,7 +70,3 @@ class BaseObject(sprite.Sprite, EventHandler):
 
     def serialize(self):
         return pickle.dumps(self.toDict())
-
-    @staticmethod
-    def fromSaveFormat(d, game):
-        return eval("%s(d, game)" % d["class"])
