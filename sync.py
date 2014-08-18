@@ -41,46 +41,18 @@ class DispatchingWhiteboard(Whiteboard):
 
 	def onObjectCreationCompleted(self, object):
 		self.dispatch(evt="addObject", args=(object.serialize(),))
+
+	def _deserialize(self, s):
+		return objects.deserialize(s, self.viewer)
 	
 	def addObject(self, object):
-		super(DispatchingWhiteboard, self).addObject(objects.deserialize(object))
-
-	def OnPlay(self, evt, dispatch=True):
-		if self.getMedia() is None:
-			self.OnOpen(None)
-			if not self.isServer:
-				dispatch = False				
-		else:
-			self.play()
-		if dispatch: self.dispatch(evt="OnPlayAt", args=(self.getTime(),))
-	
-	def OnPlayAt(self, time, dispatch=False):
-		self.seek(time)
-		self.play()
-	
-	def OnPause(self, evt, dispatch=True):
-		#if self.isServer: 
-		#	print "closing client connections"
-		#	for conn in self.dispatcher.connections:
-		#		conn.handle_close()			
-		#	return
-		super(DispatchingPlayer, self).OnPause(evt)
-		if dispatch:
-			self.dispatch(evt="OnPauseAt", args=(self.getTime(),))
-	
-	def OnPauseAt(self, time, dispatch=False):
-		self.seek(time)
-		self.pause()
-	
-	def OnSeek(self, time, dispatch=True):
-		super(DispatchingPlayer, self).OnSeek(time)
-		if dispatch: self.dispatch(evt="OnSeek", args=(time,))
+		super(DispatchingWhiteboard, self).addObject(self._deserialize(object))
 	
 	def dispatch(self, **d):
 		self.dispatcher.dispatch(d)
 
 	def handleNetworkEvent(self, d):
-		exec("self.%s(*d['args'], dispatch=False)" % d["evt"])
+		exec("self.%s(*d['args'])" % d["evt"])
 		
 	def OnTimer(self, evt):
 		Player.OnTimer(self, evt)
@@ -89,10 +61,46 @@ class DispatchingWhiteboard(Whiteboard):
 			if t.time() - self.lastPing > 1:
 				self.lastPing = t.time()
 				self.dispatch(ping = True)
+
+class Dispatcher(asyncore.dispatcher_with_send):
+	def __init__(self, sock=None):
+		asyncore.dispatcher_with_send.__init__(self, sock=sock)
+		self.terminator = "\r\n\r\n$end$\r\n\r\n"
+		self.recvBuffer = ""
 	
-class SyncServer(asyncore.dispatcher_with_send):
+	def send(self, data):
+		asyncore.dispatcher_with_send.send(self, data + self.terminator)
+		
+	def initiate_send(self):
+		while len(self.out_buffer) > 0:
+			print "initiating send"
+			asyncore.dispatcher_with_send.initiate_send(self)
+
+	def handle_read(self):
+		d = self.recv(8192)
+		if d == "": # connection closed from other end			
+			return
+		self.recvBuffer += d
+		print self.recvBuffer
+		print "recvBuffer size: %d" % len(self.recvBuffer)
+		while True:
+			try:
+				tpos = self.recvBuffer.index(self.terminator)
+			except:
+				break
+			packet = self.recvBuffer[:tpos]
+			print "received packet; size %d" % len(packet)
+			print packet
+			self.handle_packet(packet)
+			self.recvBuffer = self.recvBuffer[tpos+len(self.terminator):]  
+	
+	def handle_packet(self, packet):
+		''' handles a read packet '''
+		sys.stderr('WARNING: unhandled packet; size %d' % len(packet))
+	
+class SyncServer(Dispatcher):
 	def __init__(self, port):
-		asyncore.dispatcher.__init__(self)
+		Dispatcher.__init__(self)
 		# start listening for connections
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
 		host = ""
@@ -124,9 +132,9 @@ class SyncServer(asyncore.dispatcher_with_send):
 		if len(self.connections) == 0:
 			self.whiteboard.errorDialog("All client connections have been closed.")			
 
-class DispatcherConnection(asyncore.dispatcher_with_send):
+class DispatcherConnection(Dispatcher):
 	def __init__(self, connection, server):
-		asyncore.dispatcher_with_send.__init__(self, connection)
+		Dispatcher.__init__(self, sock=connection)
 		self.syncserver = server
 
 	def writable(self):
@@ -134,9 +142,9 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 
 	def handle_write(self):
 		self.initiate_send()
-
-	def handle_read(self):
-		d = self.recv(8192)
+		
+	def handle_packet(self, packet):
+		d = packet
 		if d == "": # connection closed from other end			
 			return
 		d = pickle.loads(d)
@@ -147,7 +155,7 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 			# forward event to other clients
 			self.syncserver.dispatch(d, exclude=self)
 			# handle in own player
-			self.syncserver.whiteboard.handleNetworkEvent(d)			
+			self.syncserver.whiteboard.handleNetworkEvent(d)	
 
 	def remove(self):
 		print "client connection dropped"
@@ -158,16 +166,11 @@ class DispatcherConnection(asyncore.dispatcher_with_send):
 		self.close()
 
 	def sendData(self, d):
-		s = pickle.dumps(d)
-		o = pickle.loads(s)
-		f = open("sent.pickle", "wb")
-		f.write(s)
-		f.close()
 		self.send(pickle.dumps(d))
 
-class SyncClient(asyncore.dispatcher):	
+class SyncClient(Dispatcher):	
 	def __init__(self, server, port):
-		asyncore.dispatcher.__init__(self)		
+		Dispatcher.__init__(self)		
 		self.serverAddress = (server, port)
 		self.connectedToServer = self.connectingToServer = False
 		self.connectToServer()
@@ -186,16 +189,13 @@ class SyncClient(asyncore.dispatcher):
 		self.connectedToServer = True
 		# immediately request current playback data
 		#self.player.dispatch(evt="OnQueryPlayLoc", args=())
-		
-	def handle_read(self):
-		d = self.recv(8192)
+
+	def handle_packet(self, packet):
+		d = packet
 		if d == "": # server connection lost
 			return
-		f = open("received.pickle", "wb")
-		f.write(d)
-		f.close()
 		d = pickle.loads(d)
-		print "received: %s " % d
+		#print "received: %s " % d
 		if type(d) == dict and "evt" in d:
 			self.whiteboard.handleNetworkEvent(d)
 	
@@ -212,7 +212,7 @@ class SyncClient(asyncore.dispatcher):
 		print "connection closed"
 		self.connectedToServer = False
 		asyncore.dispatcher.close(self)
-		if self.player.questionDialog("No connection. Reconnect?\nClick 'No' to quit.", "Reconnect?"):
+		if self.whiteboard.questionDialog("No connection. Reconnect?\nClick 'No' to quit.", "Reconnect?"):
 			self.connectToServer()
 		else:
 			self.whiteboard.Close()
