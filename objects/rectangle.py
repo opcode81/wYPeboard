@@ -24,8 +24,7 @@ class Rectangle(BaseObject):
     
 class Scribble(BaseObject):
     def __init__(self, d, game):
-        BaseObject.__init__(self, d, game)
-        self.image = d["image"]
+        BaseObject.__init__(self, d, game, persistentMembers=["image"])
 
     def setSurface(self, surface):
         self.image = surface.convert()
@@ -34,3 +33,15 @@ class Scribble(BaseObject):
     def update(self, game):
         # update the sprite's drawing position relative to the camera
         self.rect.topleft = self.pos - game.camera.pos
+    
+    def _serializeValue(self, name, value):
+        format = "RGBA"
+        if name == "image":
+            s = pygame.image.tostring(self.image, format)
+            return (s, self.image.get_size(), format)
+        return super(Scribble, self)._serializeValue(name, value)
+
+    def _deserializeValue(self, name, value):
+        if name == "image" and type(value) == tuple:
+            return pygame.image.frombuffer(*value)
+        return super(Scribble, self)._deserializeValue(name, value)

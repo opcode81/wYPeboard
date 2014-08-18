@@ -62,13 +62,12 @@ class Viewer(object):
         self.screen = screen
         self.width, self.height = size
         self.running = False
+        self.renderer = renderer.GameRenderer(self)
+        self.camera = Camera((0, 0), self)        
 
     def setCanvas(self, canvas):
-        self.renderer = renderer.GameRenderer(self)
         self.canvas = canvas
-        self.camera = Camera((0, 0), self)        
         self.renderer.add(self.canvas)
-        self.avatars = pygame.sprite.Group()
         
         self.scroll = False
         self.selectedObject = None
@@ -294,7 +293,15 @@ class PenTool(Tool):
         pos2 = numpy.array([x, y]) + self.translateOrigin + marginTranslate
         print "drawing from %s to %s" % (str(pos1), str(pos2))
         pygame.draw.line(self.surface, self.color, pos1, pos2, self.lineWidth)
-        self.lineStartPos = numpy.array([x, y])        
+        self.lineStartPos = numpy.array([x, y])
+    
+    def end(self):
+        o = self.obj
+        super(PenTool, self).end()
+        #s = o.serialize()
+        #o2 = objects.objectFromString(s, self.viewer)
+        #self.viewer.canvas.add(o2)
+        #o2.offset(100, 50)
 
 class WhiteboardFrame(wx.Frame):
     def __init__(self, parent, ID, strTitle, tplSize):
