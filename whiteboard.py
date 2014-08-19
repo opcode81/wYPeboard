@@ -112,6 +112,10 @@ class Viewer(object):
             e, v, tb = sys.exc_info()
             print v
             traceback.print_tb(tb)
+            
+    def setObjects(self, objects):
+        for o in objects:
+            pass
     
     def addObject(self, object):
         self.objectsById[object.id] = object
@@ -149,7 +153,7 @@ class Viewer(object):
     
     def onLeftMouseButtonDown(self, x, y):
         if self.activeTool is None:  # select object
-            matches = filter(lambda o: o.rect.collidepoint((x, y)), self.canvas.sprites())
+            matches = filter(lambda o: o.rect.collidepoint((x, y)), self.canvas.userObjects.sprites())
             if len(matches) > 0:
                 self.selectedObject = matches[0]
                 log("selected", self.selectedObject)
@@ -230,7 +234,7 @@ class SelectTool(Tool):
         if self.selectedObjects is None:
             width = self.pos2[0] - self.pos1[0]
             height = self.pos2[1] - self.pos1[1]
-            self.selectedObjects = filter(lambda o: o.rect.colliderect(pygame.Rect(self.pos1[0], self.pos1[1], width, height)), self.viewer.canvas.sprites())
+            self.selectedObjects = filter(lambda o: o.rect.colliderect(pygame.Rect(self.pos1[0], self.pos1[1], width, height)), self.viewer.canvas.userObjects.sprites())
             print self.selectedObjects
         else:
             self.app.onObjectsMoved(self.offset, *[o.id for o in self.selectedObjects])
@@ -265,7 +269,7 @@ class EraserTool(Tool):
     
     def erase(self, x, y):
         x, y = self.screenPoint(x, y)
-        sprites = self.viewer.canvas.sprites()
+        sprites = self.viewer.canvas.userObjects.sprites()
         print sprites
         matches = filter(lambda o: o.rect.collidepoint((x, y)), sprites)
         print "eraser matches:", matches
@@ -395,7 +399,7 @@ class Whiteboard(wx.Frame):
         print "selected tool %s" % tool.name
 
     def onOpen(self, event):
-        dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.lvl", wx.OPEN)
+        dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.wyb", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())                        
             dlg.Destroy()
@@ -404,7 +408,7 @@ class Whiteboard(wx.Frame):
             self.viewer.setLevel(level.Level(path, self.viewer))
     
     def onSave(self, event):
-        dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.lvl", wx.SAVE)
+        dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.wyb", wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())                        
             dlg.Destroy()
