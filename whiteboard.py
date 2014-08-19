@@ -220,6 +220,7 @@ class SelectTool(Tool):
     def __init__(self, viewer):
         Tool.__init__(self, "select", viewer)
         self.selectedObjects = None
+        self.selectMode = True
     
     def startPos(self, x, y):
         self.pos1 = self.screenPoint(x, y)
@@ -227,7 +228,7 @@ class SelectTool(Tool):
             
     def addPos(self, x, y):
         self.pos2= self.screenPoint(x, y)
-        if self.selectedObjects is not None:
+        if not self.selectMode:
             offset = self.pos2 - self.pos1
             self.offset += offset
             self.pos1 = self.pos2
@@ -235,13 +236,14 @@ class SelectTool(Tool):
                 o.offset(*offset) 
     
     def end(self):
-        if self.selectedObjects is None:
+        if self.selectMode:
             width = self.pos2[0] - self.pos1[0]
             height = self.pos2[1] - self.pos1[1]
             self.selectedObjects = filter(lambda o: o.rect.colliderect(pygame.Rect(self.pos1[0], self.pos1[1], width, height)), self.viewer.canvas.userObjects.sprites())
             print self.selectedObjects
         else:
             self.app.onObjectsMoved(self.offset, *[o.id for o in self.selectedObjects])
+        self.selectMode = not self.selectMode
 
 class RectTool(Tool):
     def __init__(self, viewer):
@@ -273,7 +275,7 @@ class EraserTool(Tool):
     
     def erase(self, x, y):
         x, y = self.screenPoint(x, y)
-        sprites = self.viewer.canvas.userObjects.sprites()
+        sprites = self.viewer.canvas.sprites() # TODO
         print sprites
         matches = filter(lambda o: o.rect.collidepoint((x, y)), sprites)
         print "eraser matches:", matches
@@ -328,12 +330,13 @@ class PenTool(Tool):
         oldHeight = self.surface.get_height() 
         newWidth = oldWidth + growLeft + growRight
         newHeight = oldHeight + growBottom + growTop
-        print "newDim: (%d, %d)" % (newWidth, newHeight)
-        surface = pygame.Surface((newWidth, newHeight))#, pygame.SRCALPHA)
-        surface.fill((255, 0, 255))
-        surface.set_colorkey((255, 0, 255))
-        surface.blit(self.surface, (growLeft, growTop))
-        self.surface = surface
+        if newWidth > oldWidth or newHeight > oldHeight:
+            print "newDim: (%d, %d)" % (newWidth, newHeight)
+            surface = pygame.Surface((newWidth, newHeight))#, pygame.SRCALPHA)
+            surface.fill((255, 0, 255))
+            surface.set_colorkey((255, 0, 255))
+            surface.blit(self.surface, (growLeft, growTop))
+            self.surface = surface
         
         # apply new surface and translate pos
         self.obj.setSurface(self.surface)
