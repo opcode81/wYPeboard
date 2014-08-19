@@ -350,8 +350,8 @@ class PenTool(Tool):
             
             # create new larger surface and copy old surface content
             margin = self.margin
-            newWidth = oldWidth + growLeft + growRight
-            newHeight = oldHeight + growBottom + growTop
+            newWidth += growLeft + growRight
+            newHeight += growBottom + growTop
 
         if newWidth > oldWidth or newHeight > oldHeight:
             #print "newDim: (%d, %d)" % (newWidth, newHeight)
@@ -368,6 +368,8 @@ class PenTool(Tool):
         for x, y in self.inputCache:
             self.draw(x, y)
         
+        self.inputCache = []
+        
     def draw(self, x, y):
         # draw line
         margin = self.margin
@@ -381,6 +383,7 @@ class PenTool(Tool):
         self.lineStartPos = numpy.array([x, y])
     
     def end(self):
+        self.processInputs()
         if self.obj is not None: self.app.onObjectCreationCompleted(self.obj)
         super(PenTool, self).end()
 
