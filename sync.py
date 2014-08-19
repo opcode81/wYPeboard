@@ -95,7 +95,7 @@ class Dispatcher(asyncore.dispatcher):
 		self.sendBuffer = self.sendBuffer[num_sent:]
 	
 	def send(self, data):
-		print "sending packet; size %d" % len(data)
+		#print "sending packet; size %d" % len(data)
 		#print data
 		self.sendBuffer += data + self.terminator
 		self.initiate_send()
@@ -109,14 +109,14 @@ class Dispatcher(asyncore.dispatcher):
 			return
 		self.recvBuffer += d
 		#print self.recvBuffer
-		print "recvBuffer size: %d" % len(self.recvBuffer)
+		#print "recvBuffer size: %d" % len(self.recvBuffer)
 		while True:
 			try:
 				tpos = self.recvBuffer.index(self.terminator)
 			except:
 				break
 			packet = self.recvBuffer[:tpos]
-			print "received packet; size %d" % len(packet)
+			#print "received packet; size %d" % len(packet)
 			#print packet
 			self.handle_packet(packet)
 			self.recvBuffer = self.recvBuffer[tpos+len(self.terminator):]  
@@ -148,7 +148,7 @@ class SyncServer(Dispatcher):
 
 	def dispatch(self, d, exclude=None):
 		numClients = len(self.connections) if exclude is None else len(self.connections)-1
-		#print "dispatching %s to %d client(s)" % (str(d), numClients)
+		print "dispatching %s to %d client(s)" % (str(d), numClients)
 		if type(d) == dict and "evt" in d:
 			evt = d["evt"]
 			if evt != "moveUserCursor":
@@ -171,14 +171,14 @@ class DispatcherConnection(Dispatcher):
 
 	def handle_packet(self, packet):
 		d = packet
-		print "handling packet; size %d" % len(d)
+		#print "handling packet; size %d" % len(d)
 		#print d
 		if d == "": # connection closed from other end			
 			return
 		d = pickle.loads(d)
 		if type(d) == dict and "ping" in d: # ignore pings
 			return
-		print "received: %s " % d
+		#print "received: %s " % d
 		if type(d) == dict and "evt" in d:
 			# forward event to other clients
 			self.syncserver.dispatch(d, exclude=self)
