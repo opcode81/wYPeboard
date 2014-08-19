@@ -85,8 +85,9 @@ class Dispatcher(asyncore.dispatcher):
 		thread.start_new_thread(self.sendThread, ())
 		
 	def sendThread(self):
-		while len(self.sendBuffer) > 0:
-			self.sendPart()
+		while True:
+			if len(self.sendBuffer) > 0:
+				self.sendPart()
 	
 	def sendPart(self):
 		num_sent = 0
