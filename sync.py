@@ -37,8 +37,7 @@ class DispatchingWhiteboard(Whiteboard):
 		self.dispatcher = dispatcher
 		self.isServer = isServer
 		self.lastPing = t.time()
-		self.Centre()
-		self.Show()
+		self.Centre()		
 		self.lastCursorMoveTime = t.time()
 		self.userName = "user " + str(t.time())
 
@@ -217,6 +216,8 @@ class SyncClient(Dispatcher):
 		self.connectingToServer = False
 		self.connectedToServer = True
 		
+		self.whiteboard.Show()
+		
 		# register user
 		self.whiteboard.dispatch(evt="addUser", args=(self.whiteboard.userName,))
 		
@@ -263,6 +264,7 @@ def startServer(port, **wbcons):
 	print "serving on port %d" % port
 	server = SyncServer(port, **wbcons)
 	spawnNetworkThread()
+	server.whiteboard.Show()
 	return server
 	
 def startClient(server, port, **wbcons):
