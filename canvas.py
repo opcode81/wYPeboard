@@ -1,6 +1,5 @@
 import cPickle as pickle
 from objects import *
-import levelformat
 from pygame import sprite
 from renderer import LayeredRenderer
 

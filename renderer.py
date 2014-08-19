@@ -1,7 +1,6 @@
 import os
 import pygame
 from pygame import sprite
-from events import EventHandler
 
 SpriteLayer = {} # TODO use it
 for layer, name in enumerate(["background", "foreground", "ghost", "avatar"]):
