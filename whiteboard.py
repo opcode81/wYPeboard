@@ -4,7 +4,6 @@ import thread
 import traceback
 import sys
 import numpy
-from debug import log
 from pprint import pprint
 import pickle
 
@@ -161,7 +160,7 @@ class Viewer(object):
             matches = filter(lambda o: o.rect.collidepoint((x, y)), self.canvas.userObjects.sprites())
             if len(matches) > 0:
                 self.selectedObject = matches[0]
-                log("selected", self.selectedObject)
+                #log("selected", self.selectedObject)
                 
         else:
             self.activeTool.active = True
