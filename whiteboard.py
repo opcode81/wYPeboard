@@ -317,7 +317,7 @@ class PenTool(Tool):
         self.inputCache.append((x, y))
         
         t = time.time()
-        if t - self.lastProcessTime > 0.05:
+        if t - self.lastProcessTime >= 0.01:
             self.processInputs()
             self.lastProcessTime = t
     
@@ -362,9 +362,9 @@ class PenTool(Tool):
             surface.blit(self.surface, (padLeft, padTop))
             self.surface = surface
 
-            # apply new surface and translate pos
-            self.obj.setSurface(self.surface)
-            self.obj.offset(-padLeft, -padTop)
+        # apply new surface and translate pos
+        self.obj.setSurface(self.surface)
+        self.obj.offset(-padLeft, -padTop)
         
         for x, y in self.inputCache:
             self.draw(x, y)
