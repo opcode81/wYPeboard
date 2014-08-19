@@ -54,6 +54,7 @@ class DispatchingWhiteboard(Whiteboard):
 		now = t.time()
 		if now - self.lastCursorMoveTime > 0.3:
 			self.dispatch(evt="moveUserCursor", args=(self.userName, pos,))
+			self.lastCursorMoveTime = now
 
 	def _deserialize(self, s):
 		return objects.deserialize(s, self.viewer)
