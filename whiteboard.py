@@ -311,18 +311,18 @@ class PenTool(Tool):
         if self.obj is None: return
         
         # determine growth
-        print "\nminX=%d maxX=%d" % (self.minX, self.maxX)
-        print "x=%d y=%d" % (x,y)        
+        #print "\nminX=%d maxX=%d" % (self.minX, self.maxX)
+        #print "x=%d y=%d" % (x,y)        
         growRight = x - self.maxX if x > self.maxX else 0
         growLeft = self.minX - x if x < self.minX else 0
         growBottom = y - self.maxY if y > self.maxY else 0
         growTop = self.minY - y if y < self.minY else 0
-        print "grow: right=%d left=%d top=%d bottom=%d" % (growRight, growLeft, growTop, growBottom)
+        #print "grow: right=%d left=%d top=%d bottom=%d" % (growRight, growLeft, growTop, growBottom)
         self.maxX = max(self.maxX, x)
         self.maxY = max(self.maxY, y)
         self.minX = min(self.minX, x)
         self.minY = min(self.minY, y)
-        print "new: minX=%d maxX=%d" % (self.minX, self.maxX)
+        #print "new: minX=%d maxX=%d" % (self.minX, self.maxX)
         
         # create new larger surface and copy old surface content
         margin = self.margin
@@ -331,7 +331,7 @@ class PenTool(Tool):
         newWidth = oldWidth + growLeft + growRight
         newHeight = oldHeight + growBottom + growTop
         if newWidth > oldWidth or newHeight > oldHeight:
-            print "newDim: (%d, %d)" % (newWidth, newHeight)
+            #print "newDim: (%d, %d)" % (newWidth, newHeight)
             surface = pygame.Surface((newWidth, newHeight))#, pygame.SRCALPHA)
             surface.fill((255, 0, 255))
             surface.set_colorkey((255, 0, 255))
@@ -344,11 +344,11 @@ class PenTool(Tool):
         
         # draw line
         self.translateOrigin = -self.obj.pos + numpy.array([-margin, -margin])
-        print "translateOrigin=%s" % str(self.translateOrigin) 
+        #print "translateOrigin=%s" % str(self.translateOrigin) 
         marginTranslate = numpy.array([margin, margin])
         pos1 = self.lineStartPos + self.translateOrigin + marginTranslate 
         pos2 = numpy.array([x, y]) + self.translateOrigin + marginTranslate
-        print "drawing from %s to %s" % (str(pos1), str(pos2))
+        #print "drawing from %s to %s" % (str(pos1), str(pos2))
         pygame.draw.line(self.surface, self.color, pos1, pos2, self.lineWidth)
         self.lineStartPos = numpy.array([x, y])
     
