@@ -31,8 +31,8 @@ from whiteboard import Whiteboard
 import objects
 
 class DispatchingWhiteboard(Whiteboard):
-	def __init__(self, title, dispatcher, isServer):
-		Whiteboard.__init__(self, title)
+	def __init__(self, title, dispatcher, isServer, **kwargs):
+		Whiteboard.__init__(self, title, **kwargs)
 		self.dispatcher = dispatcher
 		self.isServer = isServer
 		self.lastPing = t.time()
@@ -121,7 +121,7 @@ class Dispatcher(asyncore.dispatcher):
 		sys.stderr('WARNING: unhandled packet; size %d' % len(packet))
 	
 class SyncServer(Dispatcher):
-	def __init__(self, port):
+	def __init__(self, port, **wbcons):
 		Dispatcher.__init__(self)
 		# start listening for connections
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -130,7 +130,7 @@ class SyncServer(Dispatcher):
 		self.connections = []
 		self.listen(5)
 		# create actual player
-		self.whiteboard = DispatchingWhiteboard("wYPeboard server", self, True)		
+		self.whiteboard = DispatchingWhiteboard("wYPeboard server", self, True, **wbcons)		
 	
 	def handle_accept(self):		
 		pair = self.accept()
@@ -192,13 +192,13 @@ class DispatcherConnection(Dispatcher):
 		self.send(pickle.dumps(d))
 
 class SyncClient(Dispatcher):	
-	def __init__(self, server, port):
+	def __init__(self, server, port, **wbcons):
 		Dispatcher.__init__(self)		
 		self.serverAddress = (server, port)
 		self.connectedToServer = self.connectingToServer = False
 		self.connectToServer()
 		# create actual player
-		self.whiteboard = DispatchingWhiteboard("wYPeboard client", self, False)
+		self.whiteboard = DispatchingWhiteboard("wYPeboard client", self, False, **wbcons)
 
 	def connectToServer(self):
 		print "connecting to %s..." % str(self.serverAddress)
@@ -253,15 +253,15 @@ def spawnNetworkThread():
 	networkThread.daemon = True
 	networkThread.start()
 
-def startServer(port):
+def startServer(port, **wbcons):
 	print "serving on port %d" % port
-	server = SyncServer(port)
+	server = SyncServer(port, **wbcons)
 	spawnNetworkThread()
 	return server
 	
-def startClient(server, port):
+def startClient(server, port, **wbcons):
 	print "connecting to %s:%d" % (server, port)
-	client = SyncClient(server, port)
+	client = SyncClient(server, port, **wbcons)
 	spawnNetworkThread()
 	return client
 
@@ -269,14 +269,15 @@ if __name__=='__main__':
 	app = wx.PySimpleApp()
 	
 	argv = sys.argv[1:]
+	size = (1800, 950)
 	file = None
 	if len(argv) in (2, 3) and argv[0] == "serve":
 		port = int(argv[1])
-		startServer(port)
+		startServer(port, size=size)
 	elif len(argv) in (3, 4) and argv[0] == "connect":
 		server = argv[1]
 		port = int(argv[2])
-		startClient(server, port)
+		startClient(server, port, size=size)
 	else:
 		appName = "sync.py"
 		print "\nwYPeboard\n\n"
