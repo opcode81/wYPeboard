@@ -224,6 +224,7 @@ class SelectTool(Tool):
     
     def startPos(self, x, y):
         self.pos1 = self.screenPoint(x, y)
+        self.pos2 = self.pos1
         self.offset = numpy.array([0, 0])
             
     def addPos(self, x, y):
