@@ -40,6 +40,7 @@ class DispatchingWhiteboard(Whiteboard):
 		self.Centre()		
 		self.lastCursorMoveTime = t.time()
 		self.userName = "user " + str(t.time())
+		self.remoteUserCursorUpdateInterval = 0.1
 
 	def onObjectCreationCompleted(self, object):
 		self.dispatch(evt="addObject", args=(object.serialize(),))
@@ -52,9 +53,15 @@ class DispatchingWhiteboard(Whiteboard):
 		
 	def onCursorMoved(self, pos):
 		now = t.time()
-		if now - self.lastCursorMoveTime > 0.05:
+		if now - self.lastCursorMoveTime > self.remoteUserCursorUpdateInterval:
+			#for i in range(1000):
 			self.dispatch(evt="moveUserCursor", args=(self.userName, pos,))
 			self.lastCursorMoveTime = now
+	
+	def moveUserCursor(self, userName, pos):
+		sprite = self.viewer.userCursors.get(userName)
+		if sprite is None: return
+		sprite.animateMovement(pos, self.remoteUserCursorUpdateInterval)
 
 	def _deserialize(self, s):
 		return objects.deserialize(s, self.viewer)
