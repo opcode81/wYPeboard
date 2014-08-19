@@ -278,9 +278,9 @@ class EraserTool(Tool):
     def erase(self, x, y):
         x, y = self.screenPoint(x, y)
         sprites = self.viewer.canvas.sprites() # TODO
-        print sprites
+        #print sprites
         matches = filter(lambda o: o.rect.collidepoint((x, y)), sprites)
-        print "eraser matches:", matches
+        #print "eraser matches:", matches
         if len(matches) > 0:
             ids = [o.id for o in matches]
             self.app.deleteObjects(*ids)
@@ -322,6 +322,8 @@ class PenTool(Tool):
             self.lastProcessTime = t
     
     def processInputs(self):
+        if self.obj is None: return
+        
         padLeft = 0
         padTop = 0
 
