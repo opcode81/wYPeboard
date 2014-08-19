@@ -12,7 +12,9 @@ def deserialize(s, game):
 class BaseObject(sprite.Sprite):
     ''' basic sprite object '''
     
-    def __init__(self, d, game, persistentMembers = None, *groups):
+    def __init__(self, d, game, persistentMembers = None, isUserObject=False, *groups):
+        self.isUserObject = isUserObject
+        
         if persistentMembers is None: persistentMembers = []
         self.persistentMembers = persistentMembers
         self.persistentMembers.extend(["wrect", "pos", "id"])
@@ -80,7 +82,7 @@ class BaseObject(sprite.Sprite):
 class Rectangle(BaseObject):
     def __init__(self, d, game):
         if type(d) != dict: # old construction
-            BaseObject.__init__(self, {"wrect": d.rect}, game)
+            BaseObject.__init__(self, {"wrect": d.rect}, game, isUserObject=True)
             self.setSize(d.rect.width, d.rect.height)
             self.default = self.visible = d.visibleDefault
             self.group = d.setBy
@@ -96,8 +98,8 @@ class Rectangle(BaseObject):
         self.rect.height = height
 
 class Image(BaseObject):
-    def __init__(self, d, game):
-        BaseObject.__init__(self, d, game, persistentMembers=["image"])
+    def __init__(self, d, game, **kwargs):
+        BaseObject.__init__(self, d, game, persistentMembers=["image"], **kwargs)
 
     def setSurface(self, surface):
         self.image = surface.convert()
@@ -124,4 +126,4 @@ class ImageFromResource(Image):
     
 class Scribble(Image):
     def __init__(self, d, game):
-        Image.__init__(self, d, game)
+        Image.__init__(self, d, game, isUserObject=True)
