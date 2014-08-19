@@ -29,6 +29,7 @@ import time as t
 import traceback
 from whiteboard import Whiteboard
 import objects
+import thread
 
 class DispatchingWhiteboard(Whiteboard):
 	def __init__(self, title, dispatcher, isServer, **kwargs):
@@ -81,6 +82,11 @@ class Dispatcher(asyncore.dispatcher):
 		self.terminator = "\r\n\r\n$end$\r\n\r\n"
 		self.recvBuffer = ""
 		self.sendBuffer = ""
+		thread.start_new_thread(self.sendThread, ())
+		
+	def sendThread(self):
+		while len(self.sendBuffer) > 0:
+			self.sendPart()
 	
 	def sendPart(self):
 		num_sent = 0
@@ -95,9 +101,8 @@ class Dispatcher(asyncore.dispatcher):
 		self.initiate_send()
 		
 	def initiate_send(self):
-		while len(self.sendBuffer) > 0:
-			self.sendPart()
-
+		pass
+	
 	def handle_read(self):
 		d = self.recv(8192)
 		if d == "": # connection closed from other end			
