@@ -114,8 +114,13 @@ class Viewer(object):
             traceback.print_tb(tb)
             
     def setObjects(self, objects):
+        for o in self.getObjects():
+            o.kill()
         for o in objects:
-            pass
+            self.addObject(o)
+    
+    def getObjects(self):
+        return self.canvas.userObjects.sprites()
     
     def addObject(self, object):
         self.objectsById[object.id] = object
@@ -404,18 +409,19 @@ class Whiteboard(wx.Frame):
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())                        
             dlg.Destroy()
             
-            # load level
-            self.viewer.setLevel(level.Level(path, self.viewer))
+            f = file(path, "rb")
+            d = pickle.load(f)
+            f.close()
+            self.viewer.setObjects([objects.deserialize(o, self.viewer) for o in d["objects"]])
     
     def onSave(self, event):
         dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.wyb", wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())                        
             dlg.Destroy()
-            
-            # save level
+
             f = file(path, "wb")
-            pickle.dump(self.viewer.level.saveFormat(), f)
+            pickle.dump({"objects": [o.serialize() for o in self.viewer.getObjects()]}, f)
             f.close()
 
     def onExit(self, event):

@@ -22,10 +22,6 @@ class Canvas(LayeredRenderer):
         for object in objects:
             if object.isUserObject:
                 self.userObjects.add(object)
-    
-    def saveFormat(self):
-        return {
-            "objects": [o.saveFormat() for o in self.sprites()],
-            "playerInitialPos": self.playerInitialPos
-        }
-        
+
+    def empty(self):
+        pass
