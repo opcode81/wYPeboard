@@ -338,9 +338,9 @@ class PenTool(Tool):
             surface.blit(self.surface, (growLeft, growTop))
             self.surface = surface
         
-        # apply new surface and translate pos
-        self.obj.setSurface(self.surface)
-        self.obj.offset(-growLeft, -growTop)
+            # apply new surface and translate pos
+            self.obj.setSurface(self.surface)
+            self.obj.offset(-growLeft, -growTop)
         
         # draw line
         self.translateOrigin = -self.obj.pos + numpy.array([-margin, -margin])
