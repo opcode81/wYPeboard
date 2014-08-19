@@ -4,6 +4,7 @@ from pygame import sprite
 import numpy
 import objects
 import pickle
+import thread
 
 def deserialize(s, game):
     d = pickle.loads(s)
@@ -31,7 +32,21 @@ class BaseObject(sprite.Sprite):
         
         if not hasattr(self, "pos"):
             #self.pos = self.rect.center = numpy.array(self.wrect.center)
-            self.pos = self.rect.topleft = numpy.array(self.wrect.topleft)        
+            self.pos = self.rect.topleft = numpy.array(self.wrect.topleft)
+    
+    def animateMovement(self, pos, duration):
+        thread.start_new_thread(self._animateMovement, (pos, duration))
+    
+    def _animateMovement(self, pos, duration):
+        startPos = self.pos
+        translation = numpy.array(pos) - startPos
+        startTime = time.time()
+        while True:
+            passed = min(time.time() - startTime, duration)
+            self.pos = startPos + (passed / duration) * translation
+            if passed == duration:
+                break
+            time.sleep(0.010)
         
     def update(self, game):
         # update the sprite's drawing position relative to the camera
@@ -110,6 +125,7 @@ class Image(BaseObject):
         if name == "image":
             s = pygame.image.tostring(self.image, format)
             cs = s.encode("zlib")
+            print "compression: %d -> %d" % (len(s), len(cs))
             return (cs, self.image.get_size(), format)
         return super(Image, self)._serializeValue(name, value)
 
