@@ -148,11 +148,12 @@ class SyncServer(Dispatcher):
 
 	def dispatch(self, d, exclude=None):
 		numClients = len(self.connections) if exclude is None else len(self.connections)-1
-		print "dispatching %s to %d client(s)" % (str(d), numClients)
+		#print "dispatching %s to %d client(s)" % (str(d), numClients)
 		if type(d) == dict and "evt" in d:
 			evt = d["evt"]
 			if evt != "moveUserCursor":
-				print "dispatching %s to %d clients" % (evt, numClients)
+				pass
+				#print "dispatching %s to %d clients" % (evt, numClients)
 		for c in self.connections:
 			if c != exclude:
 				c.sendData(d)
@@ -252,7 +253,8 @@ class SyncClient(Dispatcher):
 		if not self.connectedToServer:
 			return
 		if not (type(d) == dict and "ping" in d):
-			print "sending %s" % str(d)
+			pass
+			#print "sending %s" % str(d)
 		self.send(pickle.dumps(d))
 
 def spawnNetworkThread():
