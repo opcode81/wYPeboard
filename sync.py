@@ -95,28 +95,34 @@ class Dispatcher(asyncore.dispatcher):
 		self.terminator = "\r\n\r\n$end$\r\n\r\n"
 		self.recvBuffer = ""
 		self.sendBuffer = ""
+		self.dataAvailable = threading.Condition()
+		self.chunkSize = 1024
 		thread.start_new_thread(self.sendThread, ())
 
 	def sendThread(self):
 		while True:
-			if len(self.sendBuffer) > 0:
-				self.sendPart()
+			self.dataAvailable.acquire()
+			while len(self.sendBuffer) == 0:
+				self.dataAvailable.wait()
+			chunk = self.sendBuffer[:self.chunkSize]
+			self.dataAvailable.release()
+			self.sendChunk(chunk)
 
-	def sendPart(self):
-		chunkSize = 1024
+	def sendChunk(self, chunk):
 		num_sent = 0
 		num_sent = asyncore.dispatcher.send(self, self.sendBuffer[:chunkSize])
 		if len(self.sendBuffer) > chunkSize:
 			log.debug("sent %d of %d" % (num_sent, len(self.sendBuffer)))
+		self.dataAvailable.acquire()
 		self.sendBuffer = self.sendBuffer[num_sent:]
+		self.dataAvailable.release()
 
 	def send(self, data):
 		log.debug("sending packet; size %d" % len(data))
+		self.dataAvailable.acquire()
 		self.sendBuffer += data + self.terminator
-		self.initiate_send()
-
-	def initiate_send(self):
-		pass
+		self.dataAvailable.notify()
+		self.dataAvailable.release()
 
 	def handle_read(self):
 		d = self.recv(8192)
