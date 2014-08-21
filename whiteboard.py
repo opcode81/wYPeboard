@@ -17,6 +17,8 @@ global objects
 
 logging.basicConfig(level=logging.DEBUG)
 
+log = logging.getLogger(__name__)
+
 class SDLPanel(wx.Panel):
     def __init__(self, parent, ID, tplSize):
         global pygame, level, renderer, objects
@@ -297,7 +299,7 @@ class PenTool(Tool):
         self.lineWidth = 3
         self.margin = 2*self.lineWidth
         self.color = (0, 0, 0)
-        self.inputCache = []
+        self.inputBuffer = []
         self.lastProcessTime = 0
 
     def startPos(self, x, y):
@@ -315,10 +317,10 @@ class PenTool(Tool):
     def addPos(self, x, y):
         if self.obj is None: return
 
-        self.inputCache.append((x, y))
+        self.inputBuffer.append((x, y))
 
         t = time.time()
-        if t - self.lastProcessTime >= 0.02:
+        if t - self.lastProcessTime >= 0.0: # buffering of inputs currently disabled
             self.processInputs()
             self.lastProcessTime = t
 
@@ -333,8 +335,8 @@ class PenTool(Tool):
         newWidth = oldWidth
         newHeight = oldHeight
 
-        for x, y in self.inputCache:
-            # determine growth
+		# determine growth
+        for x, y in self.inputBuffer:
             #print "\nminX=%d maxX=%d" % (self.minX, self.maxX)
             #print "x=%d y=%d" % (x,y)
             growRight = x - self.maxX if x > self.maxX else 0
@@ -352,11 +354,10 @@ class PenTool(Tool):
             self.minY = min(self.minY, y)
             #print "new: minX=%d maxX=%d" % (self.minX, self.maxX)
 
-            # create new larger surface and copy old surface content
-            margin = self.margin
             newWidth += growLeft + growRight
             newHeight += growBottom + growTop
 
+		# create new larger surface and copy old surface content
         if newWidth > oldWidth or newHeight > oldHeight:
             #print "newDim: (%d, %d)" % (newWidth, newHeight)
             surface = pygame.Surface((newWidth, newHeight))#, pygame.SRCALPHA)
@@ -369,10 +370,10 @@ class PenTool(Tool):
         self.obj.setSurface(self.surface)
         self.obj.offset(-padLeft, -padTop)
 
-        for x, y in self.inputCache:
+        for x, y in self.inputBuffer:
             self.draw(x, y)
 
-        self.inputCache = []
+        self.inputBuffer = []
 
     def draw(self, x, y):
         # draw line
