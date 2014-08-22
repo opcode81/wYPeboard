@@ -462,6 +462,7 @@ class Whiteboard(wx.Frame):
         tplSize = size
         wx.Frame.__init__(self, parent, wx.ID_ANY, strTitle, size=tplSize, style=wx.DEFAULT_FRAME_STYLE & ~wx.RESIZE_BORDER & ~wx.MAXIMIZE_BOX)
         self.pnlSDL = SDLPanel(self, -1, tplSize)
+        self.clipboard = wx.Clipboard()
 
         # Menu Bar
         self.frame_menubar = wx.MenuBar()
@@ -475,7 +476,13 @@ class Whiteboard(wx.Frame):
         self.Bind(wx.EVT_MENU, self.onOpen, id=1)
         self.Bind(wx.EVT_MENU, self.onSave, id=2)
         self.Bind(wx.EVT_MENU, self.onExit, id=3)
+        # - edit menu
+        self.edit_menu = wx.Menu()
+        self.edit_menu.Append(11, "&Paste image", "Paste an image")
+        self.Bind(wx.EVT_MENU, self.onPasteImage, id=11)
+        
         self.frame_menubar.Append(self.file_menu, "File")
+        self.frame_menubar.Append(self.edit_menu, "Edit")
 
         self.viewer = self.pnlSDL.viewer
 
@@ -533,6 +540,21 @@ class Whiteboard(wx.Frame):
     def onExit(self, event):
         self.viewer.running = False
         sys.exit(0)
+    
+    def onPasteImage(self, event):
+        bdo = wx.BitmapDataObject()
+        self.clipboard.Open()
+        self.clipboard.GetData(bdo)
+        self.clipboard.Close()
+        bmp = bdo.GetBitmap()
+        #print bmp.SaveFile("foo.png", wx.BITMAP_TYPE_PNG)        
+        #buf = bytearray([0]*4*bmp.GetWidth()*bmp.GetHeight())
+        #bmp.CopyToBuffer(buf, wx.BitmapBufferFormat_RGBA)
+        #image = pygame.image.frombuffer(buf, (bmp.getWidth(), bmp.getHeight()), "RBGA")
+        data = bmp.ConvertToImage().GetData()
+        image = pygame.image.fromstring(data, (bmp.GetWidth(), bmp.GetHeight()), "RGB")
+        obj = objects.Image({"image": image, "wrect": image.get_rect()}, self.viewer, isUserObject=True)
+        self.addObject(obj)
 
     def addObject(self, object):
         self.viewer.addObject(object)
