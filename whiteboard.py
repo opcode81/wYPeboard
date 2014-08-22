@@ -201,13 +201,19 @@ class Viewer(object):
         self.app.onCursorMoved(pos)
 
 class Tool(object):
-    def __init__(self, name, viewer):
+    def __init__(self, name, wb):
         self.name = name
-        self.viewer = viewer
-        self.camera = viewer.camera
-        self.app = viewer.app
+        self.wb = wb
+        self.viewer = wb.viewer
+        self.camera = wb.viewer.camera
+        self.app = wb.viewer.app
         self.obj = None
         self.active = False
+
+    def toolbarItem(self, parent, onActivate):
+        btn = wx.Button(parent, label=self.name)
+        btn.Bind(wx.EVT_BUTTON, lambda evt: onActivate(self), btn)
+        return btn
 
     def startPos(self, x, y):
         pass
@@ -222,8 +228,8 @@ class Tool(object):
         self.obj = None
 
 class SelectTool(Tool):
-    def __init__(self, viewer):
-        Tool.__init__(self, "select", viewer)
+    def __init__(self, wb):
+        Tool.__init__(self, "select", wb)
         self.selectedObjects = None
         self.selectMode = True
 
@@ -252,11 +258,11 @@ class SelectTool(Tool):
         self.selectMode = not self.selectMode
 
 class RectTool(Tool):
-    def __init__(self, viewer):
-        Tool.__init__(self, "rectangle", viewer)
+    def __init__(self, wb):
+        Tool.__init__(self, "rectangle", wb)
 
     def startPos(self, x, y):
-        self.obj = objects.Rectangle({"wrect": pygame.Rect(x, y, 10, 10)}, self.viewer)
+        self.obj = objects.Rectangle({"wrect": pygame.Rect(x, y, 10, 10), "colour": self.wb.getColour()}, self.viewer)
         return self.obj
 
     def addPos(self, x, y):
@@ -272,8 +278,8 @@ class RectTool(Tool):
         super(RectTool, self).end()
 
 class EraserTool(Tool):
-    def __init__(self, viewer):
-        Tool.__init__(self, "erase", viewer)
+    def __init__(self, wb):
+        Tool.__init__(self, "erase", wb)
 
     def startPos(self, x, y):
         self.erase(x, y)
@@ -287,23 +293,21 @@ class EraserTool(Tool):
         if len(matches) > 0:
             ids = [o.id for o in matches]
             self.app.deleteObjects(*ids)
-            #for sprite in matches:
-            #    sprite.kill()
 
     def addPos(self, x, y):
         self.erase(x, y)
 
 class PenTool(Tool):
-    def __init__(self, viewer):
-        Tool.__init__(self, "pen", viewer)
+    def __init__(self, wb):
+        Tool.__init__(self, "pen", wb)
         self.lineWidth = 3
         self.margin = 2*self.lineWidth
-        self.color = (0, 0, 0)
         self.inputBuffer = []
         self.lastProcessTime = 0
 
     def startPos(self, x, y):
         self.lineStartPos = numpy.array([x, y])
+        self.colour = self.wb.getColour()
         surface = pygame.Surface((self.margin, self.margin))#, pygame.SRCALPHA)
         surface.fill((255, 0, 255))
         surface.set_colorkey((255, 0, 255))
@@ -335,7 +339,7 @@ class PenTool(Tool):
         newWidth = oldWidth
         newHeight = oldHeight
 
-		# determine growth
+        # determine growth
         for x, y in self.inputBuffer:
             #print "\nminX=%d maxX=%d" % (self.minX, self.maxX)
             #print "x=%d y=%d" % (x,y)
@@ -357,7 +361,7 @@ class PenTool(Tool):
             newWidth += growLeft + growRight
             newHeight += growBottom + growTop
 
-		# create new larger surface and copy old surface content
+        # create new larger surface and copy old surface content
         if newWidth > oldWidth or newHeight > oldHeight:
             #print "newDim: (%d, %d)" % (newWidth, newHeight)
             surface = pygame.Surface((newWidth, newHeight))#, pygame.SRCALPHA)
@@ -384,13 +388,24 @@ class PenTool(Tool):
         pos1 = self.lineStartPos + self.translateOrigin + marginTranslate
         pos2 = numpy.array([x, y]) + self.translateOrigin + marginTranslate
         #print "drawing from %s to %s" % (str(pos1), str(pos2))
-        pygame.draw.line(self.surface, self.color, pos1, pos2, self.lineWidth)
+        pygame.draw.line(self.surface, self.colour, pos1, pos2, self.lineWidth)
         self.lineStartPos = numpy.array([x, y])
 
     def end(self):
         self.processInputs()
         if self.obj is not None: self.app.onObjectCreationCompleted(self.obj)
         super(PenTool, self).end()
+
+class ColourTool(Tool):
+    def __init__(self, wb):
+        Tool.__init__(self, "colour", wb)
+
+    def toolbarItem(self, parent, onActivate):
+        self.picker = wx.ColourPickerCtrl(parent)
+        return self.picker
+
+    def getColour(self):
+        return self.picker.GetColour()
 
 class Whiteboard(wx.Frame):
     def __init__(self, strTitle, size=(800, 600)):
@@ -417,17 +432,18 @@ class Whiteboard(wx.Frame):
 
         toolbar = wx.Panel(self)
         self.toolbar = toolbar
+        self.colourTool = ColourTool(self)
         tools = [
-             SelectTool(self.viewer),
-             PenTool(self.viewer),
-             RectTool(self.viewer),
-             EraserTool(self.viewer)
+             SelectTool(self),
+             self.colourTool,
+             PenTool(self),
+             RectTool(self),
+             EraserTool(self)
         ]
         box = wx.BoxSizer(wx.HORIZONTAL)
         for i, tool in enumerate(tools):
-            btn = wx.Button(toolbar, label=tool.name)
-            self.Bind(wx.EVT_BUTTON, lambda evt, tool=tool: self.onSelectTool(tool), btn)
-            box.Add(btn)
+            control = tool.toolbarItem(toolbar, self.onSelectTool)
+            box.Add(control)
         toolbar.SetSizer(box)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -439,6 +455,9 @@ class Whiteboard(wx.Frame):
         tool.active = False
         self.viewer.activeTool = tool
         log.debug("selected tool %s" % tool.name)
+    
+    def getColour(self):
+        return self.colourTool.getColour()
 
     def onOpen(self, event):
         dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.wyb", wx.OPEN)
