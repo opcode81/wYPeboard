@@ -411,13 +411,49 @@ class ColourTool(Tool):
     def getColour(self):
         return self.picker.GetColour()
 
+class TextEditDialog(wx.Frame):
+    # TODO unfinished
+    def __init__(self, parent, **kw):
+        #wx.Dialog.__init__(self, parent, **kw)
+        wx.Frame.__init__(self, parent)
+
+        self.textControl = wx.TextCtrl(self, 1, style=wx.TE_MULTILINE)
+       
+        hbox2 = wx.BoxSizer(wx.HORIZONTAL)
+        okButton = wx.Button(self, label='Ok')
+        closeButton = wx.Button(self, label='Close')
+        hbox2.Add(okButton)
+        hbox2.Add(closeButton, flag=wx.LEFT, border=5)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(self.textControl, proportion=1, 
+            flag=wx.ALL|wx.EXPAND, border=5)
+        vbox.Add(hbox2, 
+            flag=wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border=10)
+
+        self.SetSizer(vbox)
+        
+        okButton.Bind(wx.EVT_BUTTON, self.OnClose)
+        closeButton.Bind(wx.EVT_BUTTON, self.OnClose)
+        
+        self.SetSize((250, 200))
+        self.SetTitle("Change Color Depth")
+        
+    def OnClose(self, e):
+        self.Destroy()
+
 class TextTool(Tool):
     def __init__(self, wb):
         Tool.__init__(self, "text", wb)
     
     def end(self, x, y):
-        print "text at %s"  % str((x, y))
-        self.obj = objects.Text({"pos": (x, y), "text": "foobar", "colour": self.wb.getColour()}, self.viewer)
+        wx.CallAfter(self.enterText, x, y)
+    
+    def enterText(self, x, y):
+        dlg = wx.TextEntryDialog(self.wb, "Please enter the text", "Text", "") # TODO
+        dlg.ShowModal()
+        text = dlg.GetValue()
+        self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": "Arial", "fontSize": 12}, self.viewer)
         self.wb.addObject(self.obj)
 
 class Whiteboard(wx.Frame):
@@ -539,7 +575,7 @@ class Whiteboard(wx.Frame):
         return wx.MessageDialog(self, message, title, wx.YES_NO | wx.ICON_QUESTION).ShowModal() == wx.ID_YES
 
 if __name__ == '__main__':
-    app = wx.PySimpleApp()
+    app = wx.App(False)
     frame = Whiteboard("wYPeboard")
     frame.Show()
     app.MainLoop()

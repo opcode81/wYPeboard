@@ -142,12 +142,28 @@ class Scribble(Image):
 
 class Text(Image):
     def __init__(self, d, game):
-        Image.__init__(self, d, game, persistentMembers=["text", "colour"], isUserObject=True)
+        Image.__init__(self, d, game, persistentMembers=["text", "colour", "fontSize", "fontName"], isUserObject=True)
+        self.font = pygame.font.SysFont(self.fontName, self.fontSize)
+        self.setText(self.text)
         
+    def setText(self, text):
         #font = pygame.freetype.get_default_font()
         #self.image = font.render(self.text, fgcolor=self.colour, size=10)
+        lines = text.split("\n")
+        width = 0
+        height = 0
+        for l in lines:
+            w, h = self.font.size(l)
+            width = max(w, width)
+            height += h
         
-        font = pygame.font.SysFont("Arial", 12)
-        self.image = font.render(self.text, True, self.colour)
+        surface = pygame.Surface((width, height))
+        surface.fill((255, 255, 255))
         
-        self.rect = self.image.get_rect()
+        y = 0
+        for l in lines:
+            s = self.font.render(l, True, self.colour, (255,255,255))
+            surface.blit(s, (0, y))
+            y += s.get_height()
+        
+        self.setSurface(surface)
