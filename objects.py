@@ -28,7 +28,8 @@ class BaseObject(sprite.Sprite):
             if member in d:
                 self.__dict__[member] = self._deserializeValue(member, d[member])
         
-        self.rect = self.wrect.copy()
+        if hasattr(self, "wrect"):
+            self.rect = self.wrect.copy()
         
         if not hasattr(self, "pos"):
             #self.pos = self.rect.center = numpy.array(self.wrect.center)
@@ -107,8 +108,9 @@ class Rectangle(BaseObject):
         self.rect.height = height
 
 class Image(BaseObject):
-    def __init__(self, d, game, **kwargs):
-        BaseObject.__init__(self, d, game, persistentMembers=["image"], **kwargs)
+    def __init__(self, d, game, persistentMembers = None, **kwargs):
+        if persistentMembers is None: persistentMembers = []
+        BaseObject.__init__(self, d, game, persistentMembers=persistentMembers+["image"], **kwargs)
 
     def setSurface(self, surface):
         self.image = surface.convert()
@@ -137,3 +139,15 @@ class ImageFromResource(Image):
 class Scribble(Image):
     def __init__(self, d, game):
         Image.__init__(self, d, game, isUserObject=True)
+
+class Text(Image):
+    def __init__(self, d, game):
+        Image.__init__(self, d, game, persistentMembers=["text", "colour"], isUserObject=True)
+        
+        #font = pygame.freetype.get_default_font()
+        #self.image = font.render(self.text, fgcolor=self.colour, size=10)
+        
+        font = pygame.font.SysFont("Arial", 12)
+        self.image = font.render(self.text, True, self.colour)
+        
+        self.rect = self.image.get_rect()

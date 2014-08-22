@@ -33,6 +33,9 @@ class SDLPanel(wx.Panel):
         import renderer
         import objects
         pygame.display.init()
+        pygame.font.init()
+        #import pygame.freetype
+        #pygame.freetype.init()
         screen = pygame.display.set_mode(tplSize)
 
         # initialize level viewer
@@ -92,9 +95,9 @@ class Viewer(object):
             while self.running:
                 for event in pygame.event.get():
                     # log(event)
-
+                    
                     if event.type == pygame.MOUSEBUTTONDOWN:
-                        x, y = event.pos
+                        x, y = event.pos    
                         if event.button == 3:
                             self.onRightMouseButtonDown(x, y)
                         elif event.button == 1:
@@ -104,7 +107,7 @@ class Viewer(object):
                         if event.button == 3:
                             self.onRightMouseButtonUp()
                         elif event.button == 1:
-                            self.onLeftMouseButtonUp()
+                            self.onLeftMouseButtonUp(*event.pos)
 
                     if event.type == pygame.MOUSEMOTION:
                         self.onMouseMove(*(event.pos + event.rel))
@@ -178,9 +181,10 @@ class Viewer(object):
     def onRightMouseButtonUp(self):
         self.scroll = False
 
-    def onLeftMouseButtonUp(self):
+    def onLeftMouseButtonUp(self, x, y):
+        pos = numpy.array([x, y]) + self.camera.pos
         if self.activeTool is not None:
-            self.activeTool.end()
+            self.activeTool.end(*pos)
             self.activeTool.active = False
         #self.activeTool = None
         self.selectedObject = None
@@ -206,7 +210,6 @@ class Tool(object):
         self.wb = wb
         self.viewer = wb.viewer
         self.camera = wb.viewer.camera
-        self.app = wb.viewer.app
         self.obj = None
         self.active = False
 
@@ -224,7 +227,7 @@ class Tool(object):
     def screenPoint(self, x, y):
         return numpy.array([x, y]) - self.camera.pos
 
-    def end(self):
+    def end(self, x, y):
         self.obj = None
 
 class SelectTool(Tool):
@@ -247,14 +250,14 @@ class SelectTool(Tool):
             for o in self.selectedObjects:
                 o.offset(*offset)
 
-    def end(self):
+    def end(self, x, y):
         if self.selectMode:
             width = self.pos2[0] - self.pos1[0]
             height = self.pos2[1] - self.pos1[1]
             self.selectedObjects = filter(lambda o: o.rect.colliderect(pygame.Rect(self.pos1[0], self.pos1[1], width, height)), self.viewer.canvas.userObjects.sprites())
             log.debug("selected: %s", str(self.selectedObjects))
         else:
-            self.app.onObjectsMoved(self.offset, *[o.id for o in self.selectedObjects])
+            self.wb.onObjectsMoved(self.offset, *[o.id for o in self.selectedObjects])
         self.selectMode = not self.selectMode
 
 class RectTool(Tool):
@@ -273,9 +276,9 @@ class RectTool(Tool):
         if dim[0] > 0 and dim[1] > 0:
             self.obj.setSize(dim[0], dim[1])
 
-    def end(self):
-        if self.obj is not None: self.app.onObjectCreationCompleted(self.obj)
-        super(RectTool, self).end()
+    def end(self, x, y):
+        if self.obj is not None: self.wb.onObjectCreationCompleted(self.obj)
+        super(RectTool, self).end(x, y)
 
 class EraserTool(Tool):
     def __init__(self, wb):
@@ -292,7 +295,7 @@ class EraserTool(Tool):
         #print "eraser matches:", matches
         if len(matches) > 0:
             ids = [o.id for o in matches]
-            self.app.deleteObjects(*ids)
+            self.wb.deleteObjects(*ids)
 
     def addPos(self, x, y):
         self.erase(x, y)
@@ -319,6 +322,7 @@ class PenTool(Tool):
         return self.obj
 
     def addPos(self, x, y):
+        print "pen at %s" % str((x,y))
         if self.obj is None: return
 
         self.inputBuffer.append((x, y))
@@ -391,10 +395,10 @@ class PenTool(Tool):
         pygame.draw.line(self.surface, self.colour, pos1, pos2, self.lineWidth)
         self.lineStartPos = numpy.array([x, y])
 
-    def end(self):
+    def end(self, x, y):
         self.processInputs()
-        if self.obj is not None: self.app.onObjectCreationCompleted(self.obj)
-        super(PenTool, self).end()
+        if self.obj is not None: self.wb.onObjectCreationCompleted(self.obj)
+        super(PenTool, self).end(x, y)
 
 class ColourTool(Tool):
     def __init__(self, wb):
@@ -406,6 +410,15 @@ class ColourTool(Tool):
 
     def getColour(self):
         return self.picker.GetColour()
+
+class TextTool(Tool):
+    def __init__(self, wb):
+        Tool.__init__(self, "text", wb)
+    
+    def end(self, x, y):
+        print "text at %s"  % str((x, y))
+        self.obj = objects.Text({"pos": (x, y), "text": "foobar", "colour": self.wb.getColour()}, self.viewer)
+        self.wb.addObject(self.obj)
 
 class Whiteboard(wx.Frame):
     def __init__(self, strTitle, size=(800, 600)):
@@ -438,6 +451,7 @@ class Whiteboard(wx.Frame):
              self.colourTool,
              PenTool(self),
              RectTool(self),
+             TextTool(self),
              EraserTool(self)
         ]
         box = wx.BoxSizer(wx.HORIZONTAL)
