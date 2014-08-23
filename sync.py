@@ -265,7 +265,7 @@ def startClient(server, port, **wbcons):
 	return client
 
 if __name__=='__main__':
-	app = wx.PySimpleApp()
+	app = wx.App(False)
 
 	argv = sys.argv[1:]
 	#size = (1800, 950)
@@ -273,11 +273,11 @@ if __name__=='__main__':
 	file = None
 	if len(argv) in (2, 3) and argv[0] == "serve":
 		port = int(argv[1])
-		startServer(port, size=size)
+		startServer(port, canvasSize=size)
 	elif len(argv) in (3, 4) and argv[0] == "connect":
 		server = argv[1]
 		port = int(argv[2])
-		startClient(server, port, size=size)
+		startClient(server, port, canvasSize=size)
 	else:
 		appName = "sync.py"
 		print "\nwYPeboard\n\n"
