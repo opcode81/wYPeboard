@@ -8,6 +8,7 @@ from pprint import pprint
 import pickle
 import time
 import logging
+import platform
 
 # deferred pygame imports
 global pygame
@@ -20,23 +21,25 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 class SDLPanel(wx.Panel):
-    def __init__(self, parent, ID, tplSize):
+    def __init__(self, parent, ID, tplSize, caption, isInline):
         global pygame, level, renderer, objects
         wx.Panel.__init__(self, parent, ID, size=tplSize)
         self.Fit()
 
         # initialize pygame-related stuff
-        os.environ['SDL_WINDOWID'] = str(self.GetHandle())
-        os.environ['SDL_VIDEODRIVER'] = 'windib'
+        if isInline:
+            os.environ['SDL_WINDOWID'] = str(self.GetHandle())
+            os.environ['SDL_VIDEODRIVER'] = 'windib'
         import pygame  # this has to happen after setting the environment variables.
         import canvas
         import renderer
         import objects
-        pygame.display.init()
+        pygame.display.init()   
         pygame.font.init()
         #import pygame.freetype
         #pygame.freetype.init()
         screen = pygame.display.set_mode(tplSize)
+        pygame.display.set_caption(caption)
 
         # initialize level viewer
         self.screen = screen
@@ -119,7 +122,9 @@ class Viewer(object):
                     self.draw()
                 except:
                     log.warning("rendering pass failed")
-                    pass
+                    e, v, tb = sys.exc_info()
+                    print v
+                    traceback.print_tb(tb)
 
         except:
             e, v, tb = sys.exc_info()
@@ -463,32 +468,45 @@ class TextTool(Tool):
         self.wb.addObject(self.obj)
 
 class Whiteboard(wx.Frame):
-    def __init__(self, strTitle, size=(800, 600)):
+    def __init__(self, strTitle, canvasSize=(800, 600)):
+        self.isMultiWindow = platform.system() != "Windows"
         parent = None
-        tplSize = size
-        wx.Frame.__init__(self, parent, wx.ID_ANY, strTitle, size=tplSize, style=wx.DEFAULT_FRAME_STYLE & ~wx.RESIZE_BORDER & ~wx.MAXIMIZE_BOX)
-        self.pnlSDL = SDLPanel(self, -1, tplSize)
+        size = canvasSize if not self.isMultiWindow else (80, 200)
+        if not self.isMultiWindow:
+            style = wx.DEFAULT_FRAME_STYLE & ~wx.RESIZE_BORDER & ~wx.MAXIMIZE_BOX
+        else:
+            style = (wx.STAY_ON_TOP | wx.CAPTION) & ~wx.SYSTEM_MENU
+        wx.Frame.__init__(self, parent, wx.ID_ANY, strTitle, size=size, style=style)
+        self.pnlSDL = SDLPanel(self, -1, canvasSize, strTitle, not self.isMultiWindow)
         self.clipboard = wx.Clipboard()
 
         # Menu Bar
         self.frame_menubar = wx.MenuBar()
         self.SetMenuBar(self.frame_menubar)
-        # - file Menu
+        # - file Menu        
         self.file_menu = wx.Menu()
-        self.file_menu.Append(1, "&Open", "Open from file..")
-        self.file_menu.Append(2, "&Save", "Open a file..")
+        self.file_menu.Append(100, "&Open", "Open from file..")
+        self.file_menu.Append(101, "&Save", "Open a file..")
         self.file_menu.AppendSeparator()
-        self.file_menu.Append(3, "&Close", "Quit")
-        self.Bind(wx.EVT_MENU, self.onOpen, id=1)
-        self.Bind(wx.EVT_MENU, self.onSave, id=2)
-        self.Bind(wx.EVT_MENU, self.onExit, id=3)
+        self.file_menu.Append(102, "&Close", "Quit")
+        self.Bind(wx.EVT_MENU, self.onOpen, id=101)
+        self.Bind(wx.EVT_MENU, self.onSave, id=102)
+        self.Bind(wx.EVT_MENU, self.onExit, id=103)
         # - edit menu
         self.edit_menu = wx.Menu()
-        self.edit_menu.Append(11, "&Paste image", "Paste an image")
-        self.Bind(wx.EVT_MENU, self.onPasteImage, id=11)
+        self.edit_menu.Append(201, "&Paste image", "Paste an image")
+        self.Bind(wx.EVT_MENU, self.onPasteImage, id=201)
         
-        self.frame_menubar.Append(self.file_menu, "File")
-        self.frame_menubar.Append(self.edit_menu, "Edit")
+        menus = ((self.file_menu, "File"), (self.edit_menu, "Edit"))
+        
+        if not self.isMultiWindow:
+            for menu, name in menus:
+                self.frame_menubar.Append(menu, name)
+        else:
+            joinedMenu = wx.Menu()
+            for i, (menu, name) in enumerate(menus):
+                joinedMenu.AppendMenu(i, name, menu)
+            self.frame_menubar.Append(joinedMenu, "Menu")
 
         self.viewer = self.pnlSDL.viewer
 
@@ -503,16 +521,23 @@ class Whiteboard(wx.Frame):
              TextTool(self),
              EraserTool(self)
         ]
-        box = wx.BoxSizer(wx.HORIZONTAL)
+        box = wx.BoxSizer(wx.HORIZONTAL if not self.isMultiWindow else wx.VERTICAL)
         for i, tool in enumerate(tools):
             control = tool.toolbarItem(toolbar, self.onSelectTool)
-            box.Add(control)
+            box.Add(control, flag=wx.SHAPED)
         toolbar.SetSizer(box)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(toolbar, flag=wx.EXPAND | wx.BOTTOM, border=0)
-        sizer.Add(self.pnlSDL, 1, flag=wx.EXPAND)
-        self.SetSizer(sizer)
+        
+        if self.isMultiWindow:
+            sizer = wx.BoxSizer(wx.VERTICAL)
+            sizer.Add(toolbar, flag=wx.EXPAND)
+            sizer.Add(self.pnlSDL)
+            self.SetSizer(sizer)
+            #self.SetSizer(box)
+        else:
+            sizer = wx.BoxSizer(wx.VERTICAL)
+            sizer.Add(toolbar, flag=wx.EXPAND | wx.BOTTOM, border=0)
+            sizer.Add(self.pnlSDL, 1, flag=wx.EXPAND)
+            self.SetSizer(sizer)
 
     def onSelectTool(self, tool):
         tool.active = False
