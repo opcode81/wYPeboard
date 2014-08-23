@@ -289,10 +289,10 @@ class EraserTool(Tool):
 
     def erase(self, x, y):
         x, y = self.screenPoint(x, y)
-        sprites = self.viewer.canvas.sprites() # TODO
-        #print sprites
+        sprites = self.viewer.canvas.userObjects.sprites() # TODO
+        #log.debug(sprites
         matches = filter(lambda o: o.rect.collidepoint((x, y)), sprites)
-        #print "eraser matches:", matches
+        log.debug("eraser matches: %s", matches)
         if len(matches) > 0:
             ids = [o.id for o in matches]
             self.wb.deleteObjects(*ids)
@@ -322,7 +322,7 @@ class PenTool(Tool):
         return self.obj
 
     def addPos(self, x, y):
-        print "pen at %s" % str((x,y))
+        #log.debug("pen at %s" % str((x,y)))
         if self.obj is None: return
 
         self.inputBuffer.append((x, y))

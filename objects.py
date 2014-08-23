@@ -96,8 +96,8 @@ class BaseObject(sprite.Sprite):
         return pickle.dumps(self.toDict())
 
 class Rectangle(BaseObject):
-    def __init__(self, d, game):
-        BaseObject.__init__(self, d, game, persistentMembers=["colour"])
+    def __init__(self, d, game, **kwargs):
+        BaseObject.__init__(self, d, game, persistentMembers=["colour"], isUserObject=True, **kwargs)
         self.setSize(self.rect.width, self.rect.height)
             
     def setSize(self, width, height):
