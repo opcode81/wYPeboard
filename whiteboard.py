@@ -584,6 +584,12 @@ class Whiteboard(wx.Frame):
 
     def moveObjects(self, offset, *objectIds):
         self.viewer.moveObjects(offset, *objectIds)
+    
+    def setObjects(self, objects):
+        self.viewer.setObjects(objects)
+    
+    def getObjects(self):
+        return self.viewer.getObjects()
 
     def addUser(self, name):
         self.viewer.addUser(name)

@@ -74,6 +74,11 @@ class DispatchingWhiteboard(Whiteboard):
 
 	def addObject(self, object):
 		super(DispatchingWhiteboard, self).addObject(self._deserialize(object))
+	
+	def setObjects(self, objects):
+		log.debug("setObjects with %d objects", len(objects))
+		objects = map(lambda o: self._deserialize(o), objects)
+		super(DispatchingWhiteboard, self).setObjects(objects)
 
 	def dispatch(self, **d):
 		self.dispatcher.dispatch(d)
@@ -138,7 +143,9 @@ class SyncServer(Dispatcher):
 		log.info("incoming connection from %s" % str(pair[1]))
 		conn = DispatcherConnection(pair[0], self)
 		self.connections.append(conn)
-		self.whiteboard.dispatch(evt="addUser", args=(self.whiteboard.userName,))
+		# send initial data to new user
+		conn.sendData(dict(evt="addUser", args=(self.whiteboard.userName,)))
+		conn.sendData(dict(evt="setObjects", args=([o.serialize() for o in self.whiteboard.getObjects()],)))
 
 	def dispatch(self, d, exclude=None):
 		numClients = len(self.connections) if exclude is None else len(self.connections)-1
