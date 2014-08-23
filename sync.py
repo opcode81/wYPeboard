@@ -89,40 +89,15 @@ class DispatchingWhiteboard(Whiteboard):
 				self.lastPing = t.time()
 				self.dispatch(ping = True)
 
-class Dispatcher(asyncore.dispatcher):
+class Dispatcher(asyncore.dispatcher_with_send):
 	def __init__(self, sock=None):
-		asyncore.dispatcher.__init__(self, sock=sock)
+		asyncore.dispatcher_with_send.__init__(self, sock=sock)
 		self.terminator = "\r\n\r\n$end$\r\n\r\n"
 		self.recvBuffer = ""
-		self.sendBuffer = ""
-		self.dataAvailable = threading.Condition()
-		self.chunkSize = 1024
-		thread.start_new_thread(self.sendThread, ())
-
-	def sendThread(self):
-		while True:
-			self.dataAvailable.acquire()
-			while len(self.sendBuffer) == 0:
-				self.dataAvailable.wait()
-			chunk = self.sendBuffer[:self.chunkSize]
-			self.dataAvailable.release()
-			self.sendChunk(chunk)
-
-	def sendChunk(self, chunk):
-		num_sent = 0
-		num_sent = asyncore.dispatcher.send(self, self.sendBuffer[:self.chunkSize])
-		if len(self.sendBuffer) > self.chunkSize:
-			log.debug("sent %d of %d" % (num_sent, len(self.sendBuffer)))
-		self.dataAvailable.acquire()
-		self.sendBuffer = self.sendBuffer[num_sent:]
-		self.dataAvailable.release()
 
 	def send(self, data):
 		log.debug("sending packet; size %d" % len(data))
-		self.dataAvailable.acquire()
-		self.sendBuffer += data + self.terminator
-		self.dataAvailable.notify()
-		self.dataAvailable.release()
+		asyncore.dispatcher_with_send.send(self, data + self.terminator)
 
 	def handle_read(self):
 		d = self.recv(8192)
@@ -142,7 +117,7 @@ class Dispatcher(asyncore.dispatcher):
 
 	def handle_packet(self, packet):
 		''' handles a read packet '''
-		sys.stderr('WARNING: unhandled packet; size %d' % len(packet))
+		log.warning('unhandled packet; size %d' % len(packet))
 
 class SyncServer(Dispatcher):
 	def __init__(self, port, **wbcons):
@@ -247,12 +222,6 @@ class SyncClient(Dispatcher):
 
 	def handle_close(self):
 		self.close()
-
-	def readable(self):
-		return True
-
-	def writable(self):
-		return True
 
 	def close(self):
 		log.info("connection closed")
