@@ -110,8 +110,8 @@ class Dispatcher(asyncore.dispatcher):
 
 	def sendChunk(self, chunk):
 		num_sent = 0
-		num_sent = asyncore.dispatcher.send(self, self.sendBuffer[:chunkSize])
-		if len(self.sendBuffer) > chunkSize:
+		num_sent = asyncore.dispatcher.send(self, self.sendBuffer[:self.chunkSize])
+		if len(self.sendBuffer) > self.chunkSize:
 			log.debug("sent %d of %d" % (num_sent, len(self.sendBuffer)))
 		self.dataAvailable.acquire()
 		self.sendBuffer = self.sendBuffer[num_sent:]
