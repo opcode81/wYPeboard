@@ -92,7 +92,9 @@ class Viewer(object):
     def mainLoop(self):
         self.running = True
         try:
+            clock = pygame.time.Clock()
             while self.running:
+                clock.tick(30)
                 for event in pygame.event.get():
                     # log(event)
                     
