@@ -94,28 +94,32 @@ class Viewer(object):
         try:
             clock = pygame.time.Clock()
             while self.running:
-                clock.tick(30)
-                for event in pygame.event.get():
-                    # log(event)
-                    
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        x, y = event.pos    
-                        if event.button == 3:
-                            self.onRightMouseButtonDown(x, y)
-                        elif event.button == 1:
-                            self.onLeftMouseButtonDown(x, y)
-
-                    if event.type == pygame.MOUSEBUTTONUP:
-                        if event.button == 3:
-                            self.onRightMouseButtonUp()
-                        elif event.button == 1:
-                            self.onLeftMouseButtonUp(*event.pos)
-
-                    if event.type == pygame.MOUSEMOTION:
-                        self.onMouseMove(*(event.pos + event.rel))
-
-                self.update()
-                self.draw()
+                try:
+                    clock.tick(30)
+                    for event in pygame.event.get():
+                        # log(event)
+                        
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            x, y = event.pos    
+                            if event.button == 3:
+                                self.onRightMouseButtonDown(x, y)
+                            elif event.button == 1:
+                                self.onLeftMouseButtonDown(x, y)
+    
+                        if event.type == pygame.MOUSEBUTTONUP:
+                            if event.button == 3:
+                                self.onRightMouseButtonUp()
+                            elif event.button == 1:
+                                self.onLeftMouseButtonUp(*event.pos)
+    
+                        if event.type == pygame.MOUSEMOTION:
+                            self.onMouseMove(*(event.pos + event.rel))
+    
+                    self.update()
+                    self.draw()
+                except:
+                    log.warning("rendering pass failed")
+                    pass
 
         except:
             e, v, tb = sys.exc_info()
