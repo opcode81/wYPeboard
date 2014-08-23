@@ -4,7 +4,7 @@ from pygame import sprite
 import numpy
 import objects
 import pickle
-import thread
+import threading
 
 def deserialize(s, game):
     d = pickle.loads(s)
@@ -35,20 +35,31 @@ class BaseObject(sprite.Sprite):
             #self.pos = self.rect.center = numpy.array(self.wrect.center)
             self.pos = self.rect.topleft = numpy.array(self.wrect.topleft)
     
-    def animateMovement(self, pos, duration):
-        thread.start_new_thread(self._animateMovement, (pos, duration))
-    
-    def _animateMovement(self, pos, duration):
-        startPos = self.pos
-        translation = numpy.array(pos) - startPos
-        startTime = time.time()
-        while True:
-            passed = min(time.time() - startTime, duration)
-            self.pos = startPos + (passed / duration) * translation
-            if passed == duration:
-                break
-            time.sleep(0.010)
+    class MovementAnimationThread(threading.Thread):
+        def __init__(self, obj, pos, duration):
+            threading.Thread.__init__(self)
+            self.obj = obj
+            self.pos = pos
+            self.duration = duration
+            self.animating = True
         
+        def run(self):
+            startPos = self.obj.pos
+            translation = numpy.array(self.pos) - startPos
+            startTime = time.time()
+            while self.animating:
+                passed = min(time.time() - startTime, self.duration)
+                self.obj.pos = startPos + (passed / self.duration) * translation
+                if passed == self.duration:
+                    break
+                time.sleep(0.010)
+    
+    def animateMovement(self, pos, duration):
+        if hasattr(self, "movementAnimationThread"):
+            self.movementAnimationThread.animating = False
+        self.movementAnimationThread = BaseObject.MovementAnimationThread(self, pos, duration)
+        self.movementAnimationThread.start()
+    
     def update(self, game):
         # update the sprite's drawing position relative to the camera
         #self.rect.center = self.pos - game.camera.pos
