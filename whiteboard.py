@@ -293,7 +293,7 @@ class RectTool(Tool):
 
 class EraserTool(Tool):
     def __init__(self, wb):
-        Tool.__init__(self, "erase", wb)
+        Tool.__init__(self, "eraser", wb)
 
     def startPos(self, x, y):
         self.erase(x, y)
@@ -485,10 +485,10 @@ class Whiteboard(wx.Frame):
         self.SetMenuBar(self.frame_menubar)
         # - file Menu        
         self.file_menu = wx.Menu()
-        self.file_menu.Append(100, "&Open", "Open from file..")
-        self.file_menu.Append(101, "&Save", "Open a file..")
+        self.file_menu.Append(100, "&Open", "Open contents from file")
+        self.file_menu.Append(101, "&Save", "Save contents to file")
         self.file_menu.AppendSeparator()
-        self.file_menu.Append(102, "&Close", "Quit")
+        self.file_menu.Append(102, "&Exit", "Quit the application")
         self.Bind(wx.EVT_MENU, self.onOpen, id=101)
         self.Bind(wx.EVT_MENU, self.onSave, id=102)
         self.Bind(wx.EVT_MENU, self.onExit, id=103)
@@ -524,15 +524,16 @@ class Whiteboard(wx.Frame):
         box = wx.BoxSizer(wx.HORIZONTAL if not self.isMultiWindow else wx.VERTICAL)
         for i, tool in enumerate(tools):
             control = tool.toolbarItem(toolbar, self.onSelectTool)
-            box.Add(control, flag=wx.SHAPED)
+            box.Add(control, 1, flag=wx.EXPAND)
         toolbar.SetSizer(box)
-        
+                
         if self.isMultiWindow:
             sizer = wx.BoxSizer(wx.VERTICAL)
             sizer.Add(toolbar, flag=wx.EXPAND)
-            sizer.Add(self.pnlSDL)
-            self.SetSizer(sizer)
-            #self.SetSizer(box)
+            self.pnlSDL.Hide()
+            sizer.Add(self.pnlSDL) # the panel must be added because clicks will not get through otherwise
+            self.SetSizerAndFit(sizer)
+            self.pnlSDL.Show()
         else:
             sizer = wx.BoxSizer(wx.VERTICAL)
             sizer.Add(toolbar, flag=wx.EXPAND | wx.BOTTOM, border=0)
