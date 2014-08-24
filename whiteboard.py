@@ -469,6 +469,7 @@ class TextTool(Tool):
         text = dlg.GetValue()
         self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": "Arial", "fontSize": 18}, self.viewer)
         self.wb.addObject(self.obj)
+        self.wb.onObjectCreationCompleted(self.obj)
 
 class Whiteboard(wx.Frame):
     def __init__(self, strTitle, canvasSize=(800, 600)):
