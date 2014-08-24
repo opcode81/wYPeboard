@@ -138,6 +138,9 @@ class Image(BaseObject):
 
     def _deserializeValue(self, name, value):
         if name == "image" and type(value) == tuple:
+            dim = value[1:][0]
+            if dim[0] == 0 or dim[1] == 0:
+                return pygame.Surface((10,10)).convert()
             return pygame.image.frombuffer(value[0].decode("zlib"), *value[1:])
         return super(Image, self)._deserializeValue(name, value)
 
