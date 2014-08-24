@@ -455,38 +455,6 @@ class ColourTool(Tool):
     def getColour(self):
         return self.picker.GetColour()
 
-class TextEditDialog(wx.Dialog):
-    def __init__(self, parent, **kw):
-        wx.Dialog.__init__(self, parent, style= wx.RESIZE_BORDER, **kw)
-
-        self.textControl = wx.TextCtrl(self, 1, style=wx.TE_MULTILINE)
-       
-        hbox2 = wx.BoxSizer(wx.HORIZONTAL)
-        okButton = wx.Button(self, label='Ok')
-        closeButton = wx.Button(self, label='Close')
-        hbox2.Add(okButton)
-        hbox2.Add(closeButton, flag=wx.LEFT, border=5)
-
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.textControl, proportion=1, 
-            flag=wx.ALL|wx.EXPAND, border=5)
-        vbox.Add(hbox2, 
-            flag=wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border=10)
-
-        self.SetSizer(vbox)
-        
-        okButton.Bind(wx.EVT_BUTTON, self.OnClose)
-        closeButton.Bind(wx.EVT_BUTTON, self.OnClose)
-        
-        self.SetSize((400, 300))
-        self.SetTitle("Enter text")
-        
-    def OnClose(self, e):
-        self.Destroy()
-
-    def GetValue(self):
-        return self.textControl.GetValue()
-
 class TextTool(Tool):
     def __init__(self, wb):
         Tool.__init__(self, "text", wb)
@@ -495,14 +463,41 @@ class TextTool(Tool):
         wx.CallAfter(self.enterText, x, y)
     
     def enterText(self, x, y):
-        dlg = TextEditDialog(self.wb)
+        dlg = TextTool.TextEditDialog(self.wb)
         #dlg = wx.TextEntryDialog(self.wb, "Please enter the text", "Text", "") # TODO
-        dlg.ShowModal()
-        text = dlg.GetValue()
-        if text.strip() != "":
-            self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": self.wb.getFontName(), "fontSize": self.wb.getFontSize()}, self.viewer)
-            self.wb.addObject(self.obj)
-            self.wb.onObjectCreationCompleted(self.obj)
+        if dlg.ShowModal() == wx.ID_OK:
+            text = dlg.GetValue().strip()
+            if text != "":
+                self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": self.wb.getFontName(), "fontSize": self.wb.getFontSize()}, self.viewer)
+                self.wb.addObject(self.obj)
+                self.wb.onObjectCreationCompleted(self.obj)
+
+    class TextEditDialog(wx.Dialog):
+        def __init__(self, parent, **kw):
+            wx.Dialog.__init__(self, parent, style= wx.RESIZE_BORDER, **kw)
+    
+            self.textControl = wx.TextCtrl(self, 1, style=wx.TE_MULTILINE)
+           
+            hbox2 = wx.BoxSizer(wx.HORIZONTAL)
+            okButton = wx.Button(self, id=wx.ID_OK, label='Ok')
+            closeButton = wx.Button(self, id=wx.ID_CANCEL, label='Cancel')
+            hbox2.Add(okButton)
+            hbox2.Add(closeButton, flag=wx.LEFT, border=5)
+    
+            vbox = wx.BoxSizer(wx.VERTICAL)
+            vbox.Add(self.textControl, proportion=1, 
+                flag=wx.ALL|wx.EXPAND, border=5)
+            vbox.Add(hbox2, 
+                flag=wx.ALIGN_CENTER|wx.TOP|wx.BOTTOM, border=10)
+    
+            self.SetSizer(vbox)
+            
+            self.SetSize((400, 300))
+            self.SetTitle("Enter text")
+            
+        def GetValue(self):
+            return self.textControl.GetValue()
+
 
 class FontTool(Tool):
     def __init__(self, wb):
