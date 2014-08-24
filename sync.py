@@ -270,8 +270,8 @@ if __name__=='__main__':
 	app = wx.App(False)
 
 	argv = sys.argv[1:]
-	#size = (1800, 950)
-	size = (800, 600)
+	size = (1800, 950)
+	#size = (800, 600)
 	file = None
 	if len(argv) in (2, 3) and argv[0] == "serve":
 		port = int(argv[1])
