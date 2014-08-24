@@ -76,6 +76,7 @@ class Viewer(object):
         self.app = app
         self.objectsById = {}
         self.userCursors = {}
+        self.isLeftMouseButtonDown = False
 
     def setCanvas(self, canvas):
         self.canvas = canvas
@@ -178,6 +179,7 @@ class Viewer(object):
         self.scroll = True
 
     def onLeftMouseButtonDown(self, x, y):
+        self.isLeftMouseButtonDown = True
         if self.activeTool is None:  # select object
             matches = filter(lambda o: o.rect.collidepoint((x, y)), self.canvas.userObjects.sprites())
             if len(matches) > 0:
@@ -196,6 +198,7 @@ class Viewer(object):
         self.scroll = False
 
     def onLeftMouseButtonUp(self, x, y):
+        self.isLeftMouseButtonDown = False
         pos = numpy.array([x, y]) + self.camera.pos
         if self.activeTool is not None:
             self.activeTool.end(*pos)
@@ -213,7 +216,7 @@ class Viewer(object):
             if self.selectedObject is not None:
                 self.selectedObject.offset(dx, dy)
 
-        elif self.activeTool.active:
+        elif self.isLeftMouseButtonDown:
             self.activeTool.addPos(*pos)
 
         self.app.onCursorMoved(pos)
