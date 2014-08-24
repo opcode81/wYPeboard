@@ -109,14 +109,17 @@ class Viewer(object):
                             elif event.button == 1:
                                 self.onLeftMouseButtonDown(x, y)
     
-                        if event.type == pygame.MOUSEBUTTONUP:
+                        elif event.type == pygame.MOUSEBUTTONUP:
                             if event.button == 3:
                                 self.onRightMouseButtonUp()
                             elif event.button == 1:
                                 self.onLeftMouseButtonUp(*event.pos)
     
-                        if event.type == pygame.MOUSEMOTION:
+                        elif event.type == pygame.MOUSEMOTION:
                             self.onMouseMove(*(event.pos + event.rel))
+
+                        elif event.type == pygame.KEYDOWN:
+                            self.app.onKeyDown(event)
     
                     self.update()
                     self.draw()
@@ -513,14 +516,26 @@ class Whiteboard(wx.Frame):
         toolbar = wx.Panel(self)
         self.toolbar = toolbar
         self.colourTool = ColourTool(self)
+        self.penTool = PenTool(self)
+        self.textTool = TextTool(self)
+        self.rectTool = RectTool(self)
+        self.eraserTool = EraserTool(self)
+        self.selectTool = SelectTool(self)
         tools = [
-             SelectTool(self),
+             self.selectTool,
              self.colourTool,
-             PenTool(self),
-             RectTool(self),
-             TextTool(self),
-             EraserTool(self)
+             self.penTool,
+             self.rectTool,
+             self.textTool,
+             self.eraserTool
         ]
+        self.toolKeys = {
+            (pygame.K_p, pygame.KMOD_NONE): self.penTool,
+            (pygame.K_r, pygame.KMOD_NONE): self.rectTool,
+            (pygame.K_e, pygame.KMOD_NONE): self.eraserTool,
+            (pygame.K_s, pygame.KMOD_NONE): self.selectTool,
+            (pygame.K_t, pygame.KMOD_NONE): self.textTool
+        }
         box = wx.BoxSizer(wx.HORIZONTAL if not self.isMultiWindow else wx.VERTICAL)
         for i, tool in enumerate(tools):
             control = tool.toolbarItem(toolbar, self.onSelectTool)
@@ -574,6 +589,12 @@ class Whiteboard(wx.Frame):
     def onExit(self, event):
         self.viewer.running = False
         sys.exit(0)
+
+    def onKeyDown(self, event):
+        key = (event.key, event.mod)
+        tool = self.toolKeys.get(key)
+        if tool is not None:
+            self.onSelectTool(tool)
     
     def onPasteImage(self, event):
         bdo = wx.BitmapDataObject()
