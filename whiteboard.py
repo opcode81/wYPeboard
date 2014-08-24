@@ -98,7 +98,7 @@ class Viewer(object):
             clock = pygame.time.Clock()
             while self.running:
                 try:
-                    clock.tick(30)
+                    clock.tick(60)
                     for event in pygame.event.get():
                         # log(event)
                         
