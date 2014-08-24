@@ -425,11 +425,11 @@ class ColourTool(Tool):
     def getColour(self):
         return self.picker.GetColour()
 
-class TextEditDialog(wx.Frame):
+class TextEditDialog(wx.Dialog):
     # TODO unfinished
     def __init__(self, parent, **kw):
-        #wx.Dialog.__init__(self, parent, **kw)
-        wx.Frame.__init__(self, parent)
+        wx.Dialog.__init__(self, parent, style= wx.RESIZE_BORDER, **kw)
+        #wx.Frame.__init__(self, parent)
 
         self.textControl = wx.TextCtrl(self, 1, style=wx.TE_MULTILINE)
        
@@ -450,11 +450,14 @@ class TextEditDialog(wx.Frame):
         okButton.Bind(wx.EVT_BUTTON, self.OnClose)
         closeButton.Bind(wx.EVT_BUTTON, self.OnClose)
         
-        self.SetSize((250, 200))
-        self.SetTitle("Change Color Depth")
+        self.SetSize((400, 300))
+        self.SetTitle("Enter text")
         
     def OnClose(self, e):
         self.Destroy()
+
+    def GetValue(self):
+        return self.textControl.GetValue()
 
 class TextTool(Tool):
     def __init__(self, wb):
@@ -464,7 +467,8 @@ class TextTool(Tool):
         wx.CallAfter(self.enterText, x, y)
     
     def enterText(self, x, y):
-        dlg = wx.TextEntryDialog(self.wb, "Please enter the text", "Text", "") # TODO
+        dlg = TextEditDialog(self.wb)
+        #dlg = wx.TextEntryDialog(self.wb, "Please enter the text", "Text", "") # TODO
         dlg.ShowModal()
         text = dlg.GetValue()
         self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": "Arial", "fontSize": 18}, self.viewer)
