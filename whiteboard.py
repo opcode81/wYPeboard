@@ -456,10 +456,8 @@ class ColourTool(Tool):
         return self.picker.GetColour()
 
 class TextEditDialog(wx.Dialog):
-    # TODO unfinished
     def __init__(self, parent, **kw):
         wx.Dialog.__init__(self, parent, style= wx.RESIZE_BORDER, **kw)
-        #wx.Frame.__init__(self, parent)
 
         self.textControl = wx.TextCtrl(self, 1, style=wx.TE_MULTILINE)
        
@@ -501,9 +499,10 @@ class TextTool(Tool):
         #dlg = wx.TextEntryDialog(self.wb, "Please enter the text", "Text", "") # TODO
         dlg.ShowModal()
         text = dlg.GetValue()
-        self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": "Arial", "fontSize": 18}, self.viewer)
-        self.wb.addObject(self.obj)
-        self.wb.onObjectCreationCompleted(self.obj)
+        if text.strip() != "":
+            self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": "Arial", "fontSize": 18}, self.viewer)
+            self.wb.addObject(self.obj)
+            self.wb.onObjectCreationCompleted(self.obj)
 
 class Whiteboard(wx.Frame):
     def __init__(self, strTitle, canvasSize=(800, 600)):
