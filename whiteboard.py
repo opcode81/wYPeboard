@@ -83,7 +83,6 @@ class Viewer(object):
         self.renderer.add(self.canvas)
 
         self.scroll = False
-        self.selectedObject = None
         self.activeTool = None
 
     def update(self):
@@ -186,18 +185,10 @@ class Viewer(object):
 
     def onLeftMouseButtonDown(self, x, y):
         self.isLeftMouseButtonDown = True
-        if self.activeTool is None:  # select object
-            matches = filter(lambda o: o.rect.collidepoint((x, y)), self.canvas.userObjects.sprites())
-            if len(matches) > 0:
-                self.selectedObject = matches[0]
-                #log("selected", self.selectedObject)
-
-        else:
-            self.activeTool.active = True
+        if self.activeTool is not None:
             pos = numpy.array([x, y]) + self.camera.pos
             createdObject = self.activeTool.startPos(pos[0], pos[1])
             if createdObject is not None:
-                self.selectedObject = createdObject
                 self.addObject(createdObject)
 
     def onRightMouseButtonUp(self):
@@ -208,7 +199,6 @@ class Viewer(object):
         pos = numpy.array([x, y]) + self.camera.pos
         if self.activeTool is not None:
             self.activeTool.end(*pos)
-        self.selectedObject = None
 
     def onMouseMove(self, x, y, dx, dy):
         pos = numpy.array([x, y]) + self.camera.pos
@@ -216,11 +206,7 @@ class Viewer(object):
         if self.scroll:
             self.camera.offset(numpy.array([-dx, -dy]))
 
-        elif self.activeTool is None:  # move selected object
-            if self.selectedObject is not None:
-                self.selectedObject.offset(dx, dy)
-
-        elif self.isLeftMouseButtonDown:
+        if self.isLeftMouseButtonDown:
             self.activeTool.addPos(*pos)
 
         self.app.onCursorMoved(pos)
