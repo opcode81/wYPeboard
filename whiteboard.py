@@ -575,7 +575,7 @@ class Whiteboard(wx.Frame):
         box = wx.BoxSizer(wx.HORIZONTAL if not self.isMultiWindow else wx.VERTICAL)
         for i, tool in enumerate(tools):
             control = tool.toolbarItem(toolbar, self.onSelectTool)
-            box.Add(control, 1, flag=wx.EXPAND)
+            box.Add(control, 1 if self.isMultiWindow else 0, flag=wx.EXPAND if self.isMultiWindow else 0)
         toolbar.SetSizer(box)
                 
         if self.isMultiWindow:
