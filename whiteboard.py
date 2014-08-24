@@ -464,7 +464,7 @@ class TextTool(Tool):
         dlg = wx.TextEntryDialog(self.wb, "Please enter the text", "Text", "") # TODO
         dlg.ShowModal()
         text = dlg.GetValue()
-        self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": "Arial", "fontSize": 12}, self.viewer)
+        self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": "Arial", "fontSize": 18}, self.viewer)
         self.wb.addObject(self.obj)
 
 class Whiteboard(wx.Frame):
