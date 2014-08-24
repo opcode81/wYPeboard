@@ -134,6 +134,12 @@ class Viewer(object):
             e, v, tb = sys.exc_info()
             print v
             traceback.print_tb(tb)
+    
+    def setActiveTool(self, tool):
+        if self.activeTool is not None:
+            self.activeTool.deactivate()
+        self.activeTool = tool
+        tool.activate()
 
     def setObjects(self, objects):
         for o in self.getObjects():
@@ -202,8 +208,6 @@ class Viewer(object):
         pos = numpy.array([x, y]) + self.camera.pos
         if self.activeTool is not None:
             self.activeTool.end(*pos)
-            self.activeTool.active = False
-        #self.activeTool = None
         self.selectedObject = None
 
     def onMouseMove(self, x, y, dx, dy):
@@ -228,12 +232,17 @@ class Tool(object):
         self.viewer = wb.viewer
         self.camera = wb.viewer.camera
         self.obj = None
-        self.active = False
 
     def toolbarItem(self, parent, onActivate):
         btn = wx.Button(parent, label=self.name)
         btn.Bind(wx.EVT_BUTTON, lambda evt: onActivate(self), btn)
         return btn
+
+    def activate(self):
+        pass
+
+    def deactivate(self):
+        pass
 
     def startPos(self, x, y):
         pass
@@ -250,32 +259,64 @@ class Tool(object):
 class SelectTool(Tool):
     def __init__(self, wb):
         Tool.__init__(self, "select", wb)
+        self.noRect = pygame.Rect(0, 0, 0, 0)
+    
+    def reset(self):
+        self.selectionChooserRect = objects.Rectangle({"colour":(0,0,0,50), "rect":self.noRect.copy()}, self.viewer, isUserObject=False)
+        self.selectedAreaRect = objects.Rectangle({"colour":(0,255,150,50), "rect":self.noRect.copy()}, self.viewer, isUserObject=False)
         self.selectedObjects = None
         self.selectMode = True
+    
+    def activate(self):
+        self.reset()
+    
+    def deactivate(self):
+        self.selectedAreaRect.kill()
+        self.selectionChooserRect.kill()
 
     def startPos(self, x, y):
+        self.selectMode = not self.selectedAreaRect.absRect().contains(pygame.Rect(x, y, 1, 1))
+        log.debug("selectMode: %s", self.selectMode)
         self.pos1 = self.screenPoint(x, y)
         self.pos2 = self.pos1
         self.offset = numpy.array([0, 0])
+        if self.selectMode:
+            self.selectedAreaRect.kill()
+            self.selectedAreaRect.rect = self.noRect.copy()
+            self.selectionChooserRect.pos = (x, y)
+            self.selectionChooserRect.setSize(1, 1)
+            self.wb.addObject(self.selectionChooserRect)
 
     def addPos(self, x, y):
         self.pos2= self.screenPoint(x, y)
-        if not self.selectMode:
+        if self.selectMode:
+            width = self.pos2[0] - self.pos1[0]
+            height = self.pos2[1] - self.pos1[1]
+            self.selectionChooserRect.setSize(width, height)
+        else: # moving selection
             offset = self.pos2 - self.pos1
             self.offset += offset
             self.pos1 = self.pos2
             for o in self.selectedObjects:
                 o.offset(*offset)
+            self.selectedAreaRect.offset(*offset)
 
     def end(self, x, y):
+        self.processingInputs = False
         if self.selectMode:
             width = self.pos2[0] - self.pos1[0]
             height = self.pos2[1] - self.pos1[1]
-            self.selectedObjects = filter(lambda o: o.rect.colliderect(pygame.Rect(self.pos1[0], self.pos1[1], width, height)), self.viewer.canvas.userObjects.sprites())
-            log.debug("selected: %s", str(self.selectedObjects))
+            objs = filter(lambda o: o.rect.colliderect(pygame.Rect(self.pos1[0], self.pos1[1], width, height)), self.viewer.canvas.userObjects.sprites())
+            log.debug("selected: %s", str(objs))
+            self.selectedObjects = objs            
+            self.selectionChooserRect.kill()
+            if len(objs) > 0:
+                r = objects.boundingRect(objs)
+                self.selectedAreaRect.pos = r.topleft
+                self.selectedAreaRect.setSize(*r.size)
+                self.wb.addObject(self.selectedAreaRect)
         else:
             self.wb.onObjectsMoved(self.offset, *[o.id for o in self.selectedObjects])
-        self.selectMode = not self.selectMode
 
 class RectTool(Tool):
     def __init__(self, wb):
@@ -564,8 +605,7 @@ class Whiteboard(wx.Frame):
             self.SetSizer(sizer)
 
     def onSelectTool(self, tool):
-        tool.active = False
-        self.viewer.activeTool = tool
+        self.viewer.setActiveTool(tool)
         log.debug("selected tool %s" % tool.name)
     
     def getColour(self):

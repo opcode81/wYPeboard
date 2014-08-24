@@ -13,15 +13,16 @@ def deserialize(s, game):
 class BaseObject(sprite.Sprite):
     ''' basic sprite object '''
     
-    def __init__(self, d, game, persistentMembers = None, isUserObject=False, *groups):
+    def __init__(self, d, game, persistentMembers = None, isUserObject=False, layer=0):
         self.isUserObject = isUserObject
         
         if persistentMembers is None: persistentMembers = []
         self.persistentMembers = persistentMembers
         self.persistentMembers.extend(["rect", "pos", "id"])
         
-        sprite.Sprite.__init__(self, *groups)
+        sprite.Sprite.__init__(self)
 
+        self.layer = layer
         self.id = time.time()
         
         for member in self.persistentMembers:
@@ -106,15 +107,22 @@ class BaseObject(sprite.Sprite):
     def serialize(self):
         return pickle.dumps(self.toDict())
 
+    def absRect(self):
+        ''' returns a rectangle reflecting the abolute extents of the object '''
+        return pygame.Rect(self.pos[0], self.pos[1], self.rect.width, self.rect.height)
+
 class Rectangle(BaseObject):
     def __init__(self, d, game, **kwargs):
-        BaseObject.__init__(self, d, game, persistentMembers=["colour"], isUserObject=True, **kwargs)
+        if not "isUserObject" in kwargs: kwargs["isUserObject"] = True
+        BaseObject.__init__(self, d, game, persistentMembers=["colour"], **kwargs)
         self.setSize(self.rect.width, self.rect.height)
             
     def setSize(self, width, height):
-        surface = pygame.Surface((width, height))
+        width, height = max(1, width), max(1, height)
+        alpha = len(self.colour) == 4
+        surface = pygame.Surface((width, height), flags=pygame.SRCALPHA if alpha else 0)
         surface.fill(self.colour)
-        self.image = surface.convert()
+        self.image = surface.convert() if not alpha else surface.convert_alpha()
         self.rect.width = width
         self.rect.height = height
 
@@ -182,3 +190,7 @@ class Text(Image):
             y += s.get_height()
         
         self.setSurface(surface)
+
+def boundingRect(objects):
+    r = objects[0].absRect()
+    return r.unionall([o.absRect() for o in objects[1:]])
