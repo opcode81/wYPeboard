@@ -524,10 +524,12 @@ class Whiteboard(wx.Frame):
         self.file_menu = wx.Menu()
         self.file_menu.Append(101, "&Open", "Open contents from file")
         self.file_menu.Append(102, "&Save", "Save contents to file")
+        self.file_menu.Append(104, "&Export", "Export contents to image file")
         self.file_menu.AppendSeparator()
         self.file_menu.Append(103, "&Exit", "Quit the application")
         self.Bind(wx.EVT_MENU, self.onOpen, id=101)
         self.Bind(wx.EVT_MENU, self.onSave, id=102)
+        self.Bind(wx.EVT_MENU, self.onExport, id=104)
         self.Bind(wx.EVT_MENU, self.onExit, id=103)
         # - edit menu
         self.edit_menu = wx.Menu()
@@ -598,7 +600,7 @@ class Whiteboard(wx.Frame):
 
     def onOpen(self, event):
         log.debug("selected 'open'")
-        dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.wyb", wx.OPEN)
+        dlg = wx.FileDialog(self, "Choose a file", ".", "", "*.wyb", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
             dlg.Destroy()
@@ -610,7 +612,7 @@ class Whiteboard(wx.Frame):
 
     def onSave(self, event):
         log.debug("selected 'save'")
-        dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.wyb", wx.SAVE)
+        dlg = wx.FileDialog(self, "Choose a file", ".", "", "*.wyb", wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
             dlg.Destroy()
@@ -618,6 +620,22 @@ class Whiteboard(wx.Frame):
             f = file(path, "wb")
             pickle.dump({"objects": [o.serialize() for o in self.viewer.getObjects()]}, f)
             f.close()
+
+    def onExport(self, event):
+        log.debug("selected 'export'")
+        dlg = wx.FileDialog(self, "Choose a file", ".", "", "*.png", wx.SAVE)
+        if dlg.ShowModal() == wx.ID_OK:
+            path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
+            dlg.Destroy()
+
+            objs = self.getObjects()
+            rect = objects.boundingRect(objs)
+            translate = numpy.array(rect.topleft) * -1
+            surface = pygame.Surface(rect.size)
+            surface.fill((255,255,255))
+            for o in objs:
+                surface.blit(o.image, numpy.array(o.absRect().topleft) + translate)
+            pygame.image.save(surface, path)
 
     def onExit(self, event):
         self.viewer.running = False
