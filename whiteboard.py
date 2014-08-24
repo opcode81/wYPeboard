@@ -485,10 +485,10 @@ class Whiteboard(wx.Frame):
         self.SetMenuBar(self.frame_menubar)
         # - file Menu        
         self.file_menu = wx.Menu()
-        self.file_menu.Append(100, "&Open", "Open contents from file")
-        self.file_menu.Append(101, "&Save", "Save contents to file")
+        self.file_menu.Append(101, "&Open", "Open contents from file")
+        self.file_menu.Append(102, "&Save", "Save contents to file")
         self.file_menu.AppendSeparator()
-        self.file_menu.Append(102, "&Exit", "Quit the application")
+        self.file_menu.Append(103, "&Exit", "Quit the application")
         self.Bind(wx.EVT_MENU, self.onOpen, id=101)
         self.Bind(wx.EVT_MENU, self.onSave, id=102)
         self.Bind(wx.EVT_MENU, self.onExit, id=103)
@@ -549,6 +549,7 @@ class Whiteboard(wx.Frame):
         return self.colourTool.getColour()
 
     def onOpen(self, event):
+        log.debug("selected 'open'")
         dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.wyb", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
@@ -560,6 +561,7 @@ class Whiteboard(wx.Frame):
             self.viewer.setObjects([objects.deserialize(o, self.viewer) for o in d["objects"]])
 
     def onSave(self, event):
+        log.debug("selected 'save'")
         dlg = wx.FileDialog(self, "Choose a file", os.path.join(".", "assets", "levels"), "", "*.wyb", wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             path = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
