@@ -500,9 +500,22 @@ class TextTool(Tool):
         dlg.ShowModal()
         text = dlg.GetValue()
         if text.strip() != "":
-            self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": "Arial", "fontSize": 18}, self.viewer)
+            self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": self.wb.getFontName(), "fontSize": self.wb.getFontSize()}, self.viewer)
             self.wb.addObject(self.obj)
             self.wb.onObjectCreationCompleted(self.obj)
+
+class FontTool(Tool):
+    def __init__(self, wb):
+        Tool.__init__(self, "font", wb)
+        
+    def toolbarItem(self, parent, onActivate):
+        font = wx.Font(18, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="Arial")
+        self.picker = wx.FontPickerCtrl(parent, style=wx.FNTP_FONTDESC_AS_LABEL)
+        self.picker.SetSelectedFont(font)
+        return self.picker
+
+    def getFont(self):
+        return self.picker.GetSelectedFont()
 
 class Whiteboard(wx.Frame):
     def __init__(self, strTitle, canvasSize=(800, 600)):
@@ -557,12 +570,14 @@ class Whiteboard(wx.Frame):
         self.rectTool = RectTool(self)
         self.eraserTool = EraserTool(self)
         self.selectTool = SelectTool(self)
+        self.fontTool = FontTool(self)
         tools = [
              self.selectTool,
              self.colourTool,
              self.penTool,
              self.rectTool,
              self.textTool,
+             self.fontTool,
              self.eraserTool
         ]
         self.toolKeys = {
@@ -597,6 +612,12 @@ class Whiteboard(wx.Frame):
     
     def getColour(self):
         return self.colourTool.getColour()
+
+    def getFontName(self):
+        return self.fontTool.getFont().GetFaceName()
+
+    def getFontSize(self):
+        return self.fontTool.getFont().GetPointSize()
 
     def onOpen(self, event):
         log.debug("selected 'open'")
