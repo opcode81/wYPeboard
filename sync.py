@@ -70,6 +70,8 @@ class DispatchingWhiteboard(Whiteboard):
 		sprite.animateMovement(pos, self.remoteUserCursorUpdateInterval)
 
 	def _deserialize(self, s):
+		if not type(s) == str:
+			return s
 		return objects.deserialize(s, self.viewer)
 
 	def addObject(self, object):
