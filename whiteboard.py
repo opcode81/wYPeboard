@@ -161,7 +161,7 @@ class Viewer(object):
                 obj.offset(*offset)
 
     def addUser(self, name):
-        sprite = objects.ImageFromResource(os.path.join("img", "HandPointer.png"), {"wrect": pygame.Rect(0, 0, 0, 0)}, self)
+        sprite = objects.ImageFromResource(os.path.join("img", "HandPointer.png"), {"rect": pygame.Rect(0, 0, 0, 0)}, self)
         self.addObject(sprite)
         self.userCursors[name] = sprite
         return sprite
@@ -276,7 +276,7 @@ class RectTool(Tool):
         Tool.__init__(self, "rectangle", wb)
 
     def startPos(self, x, y):
-        self.obj = objects.Rectangle({"wrect": pygame.Rect(x, y, 10, 10), "colour": self.wb.getColour()}, self.viewer)
+        self.obj = objects.Rectangle({"rect": pygame.Rect(x, y, 10, 10), "colour": self.wb.getColour()}, self.viewer)
         return self.obj
 
     def addPos(self, x, y):
@@ -327,7 +327,7 @@ class PenTool(Tool):
         surface.set_colorkey((255, 0, 255))
         self.surface = surface
         self.translateOrigin = numpy.array([-x, -y])
-        self.obj = objects.Scribble({"wrect": pygame.Rect(x - self.margin/2, y - self.margin/2, self.margin, self.margin), "image": surface.convert()}, self.viewer)
+        self.obj = objects.Scribble({"rect": pygame.Rect(x - self.margin/2, y - self.margin/2, self.margin, self.margin), "image": surface.convert()}, self.viewer)
         self.minX = self.maxX = x
         self.minY = self.maxY = y
         return self.obj
@@ -587,7 +587,7 @@ class Whiteboard(wx.Frame):
         #image = pygame.image.frombuffer(buf, (bmp.getWidth(), bmp.getHeight()), "RBGA")
         data = bmp.ConvertToImage().GetData()
         image = pygame.image.fromstring(data, (bmp.GetWidth(), bmp.GetHeight()), "RGB")
-        obj = objects.Image({"image": image, "wrect": image.get_rect()}, self.viewer, isUserObject=True)
+        obj = objects.Image({"image": image, "rect": image.get_rect()}, self.viewer, isUserObject=True)
         self.addObject(obj)
 
     def addObject(self, object):

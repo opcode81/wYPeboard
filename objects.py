@@ -18,7 +18,7 @@ class BaseObject(sprite.Sprite):
         
         if persistentMembers is None: persistentMembers = []
         self.persistentMembers = persistentMembers
-        self.persistentMembers.extend(["wrect", "pos", "id"])
+        self.persistentMembers.extend(["rect", "pos", "id"])
         
         sprite.Sprite.__init__(self, *groups)
 
@@ -28,12 +28,12 @@ class BaseObject(sprite.Sprite):
             if member in d:
                 self.__dict__[member] = self._deserializeValue(member, d[member])
         
-        if hasattr(self, "wrect"):
-            self.rect = self.wrect.copy()
+        #if hasattr(self, "wrect"):
+        #    self.rect = self.wrect.copy()
         
         if not hasattr(self, "pos"):
             #self.pos = self.rect.center = numpy.array(self.wrect.center)
-            self.pos = self.rect.topleft = numpy.array(self.wrect.topleft)
+            self.pos = self.rect.topleft = numpy.array(self.rect.topleft)
     
     class MovementAnimationThread(threading.Thread):
         def __init__(self, obj, pos, duration):
@@ -97,7 +97,7 @@ class BaseObject(sprite.Sprite):
         return "_EVAL_:" + s
 
     def _serializeValue(self, name, value):
-        if name == "wrect":
+        if name == "rect":
             return self._stringToEval("pygame.Rect(%d, %d, %d, %d)" % (self.rect.left, self.rect.top, self.rect.width, self.rect.height))
         if name == "pos":
             return self._stringToEval("numpy.array([%s, %s])" % (str(self.pos[0]), str(self.pos[1])))
@@ -160,6 +160,7 @@ class Text(Image):
     def setText(self, text):
         #font = pygame.freetype.get_default_font()
         #self.image = font.render(self.text, fgcolor=self.colour, size=10)
+        self.text = text
         lines = text.split("\n")
         width = 0
         height = 0
