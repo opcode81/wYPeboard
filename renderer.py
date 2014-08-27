@@ -51,19 +51,20 @@ class GameRenderer(LayeredRenderer):
         LayeredRenderer.__init__(self)
         
         self.game = game
-        self.screen = game.screen
         
         #self.background = pygame.image.load(os.path.join('assets', 'images', 'background2.png')).convert()
         #self.background = pygame.transform.scale(self.background, (game.width, game.height))
     
-        self.background = pygame.Surface(self.screen.get_size())
-        self.background.fill((255,255,255))    
+        self.setBackgroundSize(self.game.screen.get_size())
     
-        self.screen.blit(self.background, [0,0])
+    def setBackgroundSize(self, size):
+        self.background = pygame.Surface(self.game.screen.get_size())
+        self.background.fill((255,255,255))
+        self.game.screen.blit(self.background, [0,0])    
     
     def draw(self):
-        self.clear(self.screen, self.background)
-        things = sprite.LayeredUpdates.draw(self, self.screen)
+        self.clear(self.game.screen, self.background)
+        things = sprite.LayeredUpdates.draw(self, self.game.screen)
         pygame.display.update(things)
         pygame.display.flip()
     

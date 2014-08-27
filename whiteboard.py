@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 class SDLPanel(wx.Panel):
     def __init__(self, parent, ID, tplSize, caption, isInline):
-        global pygame, level, renderer, objects
+        global pygame, level, renderer, objects, canvas
         wx.Panel.__init__(self, parent, ID, size=tplSize)
         self.Fit()
 
@@ -38,14 +38,10 @@ class SDLPanel(wx.Panel):
         pygame.font.init()
         #import pygame.freetype
         #pygame.freetype.init()
-        screen = pygame.display.set_mode(tplSize)
         pygame.display.set_caption(caption)
 
         # initialize level viewer
-        self.screen = screen
-        self.viewer = Viewer(screen, tplSize, parent)
-        self.canvas = canvas.Canvas(self.viewer)
-        self.viewer.setCanvas(self.canvas)
+        self.viewer = Viewer(tplSize, parent)
 
         # start pygame thread
         thread.start_new_thread(self.viewer.mainLoop, ())
@@ -67,21 +63,18 @@ class Camera(object):
 
 
 class Viewer(object):
-    def __init__(self, screen, size, app):
-        self.screen = screen
+    def __init__(self, size, app):
+        self.screen = pygame.display.set_mode(size, pygame.RESIZABLE)
         self.width, self.height = size
         self.running = False
         self.renderer = renderer.GameRenderer(self)
         self.camera = Camera((0, 0), self)
+        self.canvas = canvas.Canvas(self)
+        self.renderer.add(self.canvas)
         self.app = app
         self.objectsById = {}
         self.userCursors = {}
         self.isLeftMouseButtonDown = False
-
-    def setCanvas(self, canvas):
-        self.canvas = canvas
-        self.renderer.add(self.canvas)
-
         self.scroll = False
         self.activeTool = None
 
@@ -120,6 +113,12 @@ class Viewer(object):
 
                         elif event.type == pygame.KEYDOWN:
                             self.app.onKeyDown(event)
+                        
+                        elif event.type == pygame.VIDEORESIZE:
+                            print "resized window: ", event.size
+                            self.screen = pygame.display.set_mode(event.size, pygame.RESIZABLE)
+                            self.width, self.height = event.size
+                            self.renderer.setBackgroundSize(event.size)
     
                     self.update()
                     self.draw()
@@ -206,7 +205,7 @@ class Viewer(object):
         if self.scroll:
             self.camera.offset(numpy.array([-dx, -dy]))
 
-        if self.isLeftMouseButtonDown:
+        if self.isLeftMouseButtonDown and self.activeTool is not None:
             self.activeTool.addPos(*pos)
 
         self.app.onCursorMoved(pos)
@@ -518,7 +517,7 @@ class Whiteboard(wx.Frame):
         parent = None
         size = canvasSize if not self.isMultiWindow else (80, 200)
         if not self.isMultiWindow:
-            style = wx.DEFAULT_FRAME_STYLE & ~wx.RESIZE_BORDER & ~wx.MAXIMIZE_BOX
+            style = wx.DEFAULT_FRAME_STYLE #& ~wx.RESIZE_BORDER & ~wx.MAXIMIZE_BOX
         else:
             style = (wx.STAY_ON_TOP | wx.CAPTION) & ~wx.SYSTEM_MENU
         wx.Frame.__init__(self, parent, wx.ID_ANY, strTitle, size=size, style=style)
