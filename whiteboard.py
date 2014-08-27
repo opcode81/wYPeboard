@@ -462,20 +462,30 @@ class TextTool(Tool):
         wx.CallAfter(self.enterText, x, y)
     
     def enterText(self, x, y):
-        dlg = TextTool.TextEditDialog(self.wb)
-        #dlg = wx.TextEntryDialog(self.wb, "Please enter the text", "Text", "") # TODO
+        sx, sy = self.screenPoint(x, y)
+        textSprites = filter(lambda o: isinstance(o, objects.Text), self.viewer.canvas.userObjects.sprites()) 
+        matches = filter(lambda o: o.rect.collidepoint((sx, sy)), textSprites)
+        obj = matches[0] if len(matches) > 0 else None 
+        dlg = TextTool.TextEditDialog(self.wb, "" if obj is None else obj.text)
         if dlg.ShowModal() == wx.ID_OK:
             text = dlg.GetValue().strip()
-            if text != "":
-                self.obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": self.wb.getFontName(), "fontSize": self.wb.getFontSize()}, self.viewer)
-                self.wb.addObject(self.obj)
-                self.wb.onObjectCreationCompleted(self.obj)
+            if obj is None:
+                if text != "":
+                    obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": self.wb.getFontName(), "fontSize": self.wb.getFontSize()}, self.viewer)
+                    self.wb.addObject(obj)
+                    self.wb.onObjectCreationCompleted(obj)
+            else:
+                if text == "":
+                    pass # TODO delete object
+                else:
+                    obj.setText(text)
+                    # TODO transfer changed text
 
     class TextEditDialog(wx.Dialog):
-        def __init__(self, parent, **kw):
+        def __init__(self, parent, text="", **kw):
             wx.Dialog.__init__(self, parent, style= wx.RESIZE_BORDER, **kw)
     
-            self.textControl = wx.TextCtrl(self, 1, style=wx.TE_MULTILINE)
+            self.textControl = wx.TextCtrl(self, 1, value=text, style=wx.TE_MULTILINE)
            
             hbox2 = wx.BoxSizer(wx.HORIZONTAL)
             okButton = wx.Button(self, id=wx.ID_OK, label='Ok')
