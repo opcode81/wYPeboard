@@ -170,7 +170,7 @@ class Viewer(object):
                 obj.offset(*offset)
 
     def addUser(self, name):
-        sprite = objects.ImageFromResource(os.path.join("img", "HandPointer.png"), {"rect": pygame.Rect(0, 0, 0, 0)}, self)
+        sprite = objects.ImageFromResource(os.path.join("img", "HandPointer.png"), {"rect": pygame.Rect(0, 0, 0, 0)}, self, layer=1000)
         self.addObject(sprite)
         self.userCursors[name] = sprite
         return sprite

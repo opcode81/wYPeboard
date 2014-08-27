@@ -153,8 +153,8 @@ class Image(BaseObject):
         return super(Image, self)._deserializeValue(name, value)
 
 class ImageFromResource(Image):
-    def __init__(self, filename, d, game):
-        Image.__init__(self, d, game)
+    def __init__(self, filename, d, game, **kwargs):
+        Image.__init__(self, d, game, **kwargs)
         surface = pygame.image.load(filename)
         self.setSurface(surface)
     
