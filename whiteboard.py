@@ -347,22 +347,40 @@ class PenTool(Tool):
     def __init__(self, wb):
         Tool.__init__(self, "pen", wb)
         self.lineWidth = 3
+        self.syncWhileDrawing = True
+        self.lastProcessTime = 0
 
     def startPos(self, x, y):
+        self.pointBuffer = []
         margin = 2 * self.lineWidth
         d = dict(lineWidth=self.lineWidth, colour=self.wb.getColour())
-        #self.obj = objects.Scribble(d, self.viewer, startPoint=(x,y))
-        self.obj = objects.PointBasedScribble(d, self.viewer, startPoint=(x,y))
+        if not self.syncWhileDrawing:
+            self.obj = objects.Scribble(d, self.viewer, startPoint=(x,y))
+        else:
+            self.obj = objects.PointBasedScribble(d, self.viewer, startPoint=(x,y))            
         self.obj.addPoints([(x, y)])
+        if self.syncWhileDrawing: self.wb.onObjectCreationCompleted(self.obj)
         return self.obj
 
     def addPos(self, x, y):
         if self.obj is None: return
         self.obj.addPoints([(x, y)])
+        if self.syncWhileDrawing:
+            self.pointBuffer.append((x, y))
+            t = time.time()
+            if t - self.lastProcessTime >= 0.5:
+                self.lastProcessTime = t
+                self.wb.onObjectUpdated(self.obj.id, "addPoints", (self.pointBuffer,))
+                self.pointBuffer = []
 
     def end(self, x, y):
         self.obj.endDrawing()
-        if self.obj is not None: self.wb.onObjectCreationCompleted(self.obj)
+        if not self.syncWhileDrawing:
+            self.wb.onObjectCreationCompleted(self.obj)
+        else:
+            pass
+            self.wb.onObjectUpdated(self.obj.id, "addPoints", (self.pointBuffer,))
+            self.wb.onObjectUpdated(self.obj.id, "endDrawing", ())
         super(PenTool, self).end(x, y)
 
 class ColourTool(Tool):
@@ -622,6 +640,9 @@ class Whiteboard(wx.Frame):
         pass
 
     def onCursorMoved(self, pos):
+        pass
+
+    def onObjectUpdated(self, objectId, operation, args):
         pass
 
     def deleteObjects(self, *objectIds):

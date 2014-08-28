@@ -243,7 +243,6 @@ class ScribbleRenderer(object):
         self.inputBuffer = []
 
     def _drawLineTo(self, x, y):
-        print "drawing in %s" % (str(self.colour))
         # draw line
         margin = self.margin
         self.translateOrigin = -self.obj.pos + numpy.array([-margin, -margin])

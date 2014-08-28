@@ -56,6 +56,9 @@ class DispatchingWhiteboard(Whiteboard):
 
 	def onObjectsMoved(self, offset, *ids):
 		self.dispatch(evt="moveObjects", args=[offset] + list(ids))
+	
+	def onObjectUpdated(self, objectId, operation, args):
+		self.dispatch(evt="updateObject", args=(objectId, operation, args))
 
 	def onCursorMoved(self, pos):
 		now = t.time()
@@ -67,7 +70,8 @@ class DispatchingWhiteboard(Whiteboard):
 	def moveUserCursor(self, userName, pos):
 		sprite = self.viewer.userCursors.get(userName)
 		if sprite is None: return
-		sprite.animateMovement(pos, self.remoteUserCursorUpdateInterval)
+		#sprite.animateMovement(pos, self.remoteUserCursorUpdateInterval)
+		sprite.pos = pos
 
 	def _deserialize(self, s):
 		if not type(s) == str:
@@ -81,6 +85,11 @@ class DispatchingWhiteboard(Whiteboard):
 		log.debug("setObjects with %d objects", len(objects))
 		objects = map(lambda o: self._deserialize(o), objects)
 		super(DispatchingWhiteboard, self).setObjects(objects)
+
+	def updateObject(self, objectId, operation, args):
+		obj = self.viewer.objectsById.get(objectId)
+		if obj is None: return
+		eval("obj.%s(*args)" % operation)
 
 	def dispatch(self, **d):
 		self.dispatcher.dispatch(d)
@@ -270,8 +279,8 @@ if __name__=='__main__':
 	app = wx.App(False)
 
 	argv = sys.argv[1:]
-	size = (1800, 950)
-	#size = (800, 600)
+	#size = (1800, 950)
+	size = (800, 600)
 	file = None
 	if len(argv) in (2, 3) and argv[0] == "serve":
 		port = int(argv[1])
