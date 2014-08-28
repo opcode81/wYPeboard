@@ -347,99 +347,21 @@ class PenTool(Tool):
     def __init__(self, wb):
         Tool.__init__(self, "pen", wb)
         self.lineWidth = 3
-        self.margin = 2*self.lineWidth
-        self.inputBuffer = []
-        self.lastProcessTime = 0
 
     def startPos(self, x, y):
-        self.lineStartPos = numpy.array([x, y])
-        self.colour = self.wb.getColour()
-        surface = pygame.Surface((self.margin, self.margin))#, pygame.SRCALPHA)
-        surface.fill((255, 0, 255))
-        surface.set_colorkey((255, 0, 255))
-        self.surface = surface
-        self.translateOrigin = numpy.array([-x, -y])
-        self.obj = objects.Scribble({"rect": pygame.Rect(x - self.margin/2, y - self.margin/2, self.margin, self.margin), "image": surface.convert()}, self.viewer)
-        self.minX = self.maxX = x
-        self.minY = self.maxY = y
+        margin = 2 * self.lineWidth
+        d = dict(lineWidth=self.lineWidth, colour=self.wb.getColour())
+        #self.obj = objects.Scribble(d, self.viewer, startPoint=(x,y))
+        self.obj = objects.PointBasedScribble(d, self.viewer, startPoint=(x,y))
+        self.obj.addPoints([(x, y)])
         return self.obj
 
     def addPos(self, x, y):
-        #log.debug("pen at %s" % str((x,y)))
         if self.obj is None: return
-
-        self.inputBuffer.append((x, y))
-
-        t = time.time()
-        if t - self.lastProcessTime >= 0.0: # buffering of inputs currently disabled
-            self.processInputs()
-            self.lastProcessTime = t
-
-    def processInputs(self):
-        if self.obj is None: return
-
-        padLeft = 0
-        padTop = 0
-
-        oldWidth = self.surface.get_width()
-        oldHeight = self.surface.get_height()
-        newWidth = oldWidth
-        newHeight = oldHeight
-
-        # determine growth
-        for x, y in self.inputBuffer:
-            #print "\nminX=%d maxX=%d" % (self.minX, self.maxX)
-            #print "x=%d y=%d" % (x,y)
-            growRight = x - self.maxX if x > self.maxX else 0
-            growLeft = self.minX - x if x < self.minX else 0
-            growBottom = y - self.maxY if y > self.maxY else 0
-            growTop = self.minY - y if y < self.minY else 0
-
-            padLeft += growLeft
-            padTop += growTop
-
-            #print "grow: right=%d left=%d top=%d bottom=%d" % (growRight, growLeft, growTop, growBottom)
-            self.maxX = max(self.maxX, x)
-            self.maxY = max(self.maxY, y)
-            self.minX = min(self.minX, x)
-            self.minY = min(self.minY, y)
-            #print "new: minX=%d maxX=%d" % (self.minX, self.maxX)
-
-            newWidth += growLeft + growRight
-            newHeight += growBottom + growTop
-
-        # create new larger surface and copy old surface content
-        if newWidth > oldWidth or newHeight > oldHeight:
-            #print "newDim: (%d, %d)" % (newWidth, newHeight)
-            surface = pygame.Surface((newWidth, newHeight))#, pygame.SRCALPHA)
-            surface.fill((255, 0, 255))
-            surface.set_colorkey((255, 0, 255))
-            surface.blit(self.surface, (padLeft, padTop))
-            self.surface = surface
-
-        # apply new surface and translate pos
-        self.obj.setSurface(self.surface)
-        self.obj.offset(-padLeft, -padTop)
-
-        for x, y in self.inputBuffer:
-            self.draw(x, y)
-
-        self.inputBuffer = []
-
-    def draw(self, x, y):
-        # draw line
-        margin = self.margin
-        self.translateOrigin = -self.obj.pos + numpy.array([-margin, -margin])
-        #print "translateOrigin=%s" % str(self.translateOrigin)
-        marginTranslate = numpy.array([margin, margin])
-        pos1 = self.lineStartPos + self.translateOrigin + marginTranslate
-        pos2 = numpy.array([x, y]) + self.translateOrigin + marginTranslate
-        #print "drawing from %s to %s" % (str(pos1), str(pos2))
-        pygame.draw.line(self.surface, self.colour, pos1, pos2, self.lineWidth)
-        self.lineStartPos = numpy.array([x, y])
+        self.obj.addPoints([(x, y)])
 
     def end(self, x, y):
-        self.processInputs()
+        self.obj.endDrawing()
         if self.obj is not None: self.wb.onObjectCreationCompleted(self.obj)
         super(PenTool, self).end(x, y)
 
