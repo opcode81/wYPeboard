@@ -19,35 +19,31 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import socket
 import sys
-import threading
 import pickle
 import wx
-import asyncore
 import time as t
 import traceback
 from whiteboard import Whiteboard
 import objects
-import thread
 import numpy
 import time
 import logging
+from net import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 class DispatchingWhiteboard(Whiteboard):
-	def __init__(self, title, dispatcher, isServer, **kwargs):
+	def __init__(self, title, isServer, **kwargs):
 		Whiteboard.__init__(self, title, **kwargs)
-		self.dispatcher = dispatcher
 		self.isServer = isServer
 		self.lastPing = t.time()
 		self.Centre()
 		self.lastCursorMoveTime = t.time()
 		self.userName = "user " + str(t.time())
 		self.remoteUserCursorUpdateInterval = 0.1
-
+	
 	def onObjectCreationCompleted(self, object):
 		self.dispatch(evt="addObject", args=(object.serialize(),))
 
@@ -91,8 +87,8 @@ class DispatchingWhiteboard(Whiteboard):
 		if obj is None: return
 		eval("obj.%s(*args)" % operation)
 
-	def dispatch(self, **d):
-		self.dispatcher.dispatch(d)
+	def dispatch(self, exclude=None, **d):
+		self.dispatcher.dispatch(d, exclude=exclude)
 
 	def handleNetworkEvent(self, d):
 		exec("self.%s(*d['args'])" % d["evt"])
@@ -105,175 +101,43 @@ class DispatchingWhiteboard(Whiteboard):
 				self.lastPing = t.time()
 				self.dispatch(ping = True)
 
-class Dispatcher(asyncore.dispatcher_with_send):
-	def __init__(self, sock=None):
-		asyncore.dispatcher_with_send.__init__(self, sock=sock)
-		self.terminator = "\r\n\r\n$end$\r\n\r\n"
-		self.recvBuffer = ""
+	# server delegate methods
+	
+	def handle_ClientConnected(self, conn):
+ 		conn.sendData(dict(evt="addUser", args=(self.userName,)))
+		conn.sendData(dict(evt="setObjects", args=([o.serialize() for o in self.getObjects()],)))
+	
+	def handle_AllClientConnectionsLost(self):
+		self.errorDialog("All client connections have been closed.")
+		
+	# client delegate methods
+	
+	def handle_ConnectedToServer(self):
+		self.Show()
+		self.dispatch(evt="addUser", args=(self.userName,))
 
-	def send(self, data):
-		log.debug("sending packet; size %d" % len(data))
-		asyncore.dispatcher_with_send.send(self, data + self.terminator)
-
-	def handle_read(self):
-		d = self.recv(8192)
-		if d == "": # connection closed from other end
-			return
-		self.recvBuffer += d
-		log.debug("recvBuffer size: %d" % len(self.recvBuffer))
-		while True:
-			try:
-				tpos = self.recvBuffer.index(self.terminator)
-			except:
-				break
-			packet = self.recvBuffer[:tpos]
-			log.debug("received packet; size %d" % len(packet))
-			self.handle_packet(packet)
-			self.recvBuffer = self.recvBuffer[tpos+len(self.terminator):]
-
-	def handle_packet(self, packet):
-		''' handles a read packet '''
-		log.warning('unhandled packet; size %d' % len(packet))
-
-class SyncServer(Dispatcher):
-	def __init__(self, port, **wbcons):
-		Dispatcher.__init__(self)
-		# start listening for connections
-		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-		host = ""
-		self.bind((host, port))
-		self.connections = []
-		self.listen(5)
-		# create actual player
-		self.whiteboard = DispatchingWhiteboard("wYPeboard server", self, True, **wbcons)
-
-	def handle_accept(self):
-		pair = self.accept()
-		if pair is None:
-			return
-		log.info("incoming connection from %s" % str(pair[1]))
-		conn = DispatcherConnection(pair[0], self)
-		self.connections.append(conn)
-		# send initial data to new user
-		conn.sendData(dict(evt="addUser", args=(self.whiteboard.userName,)))
-		conn.sendData(dict(evt="setObjects", args=([o.serialize() for o in self.whiteboard.getObjects()],)))
-
-	def dispatch(self, d, exclude=None):
-		numClients = len(self.connections) if exclude is None else len(self.connections)-1
-		if type(d) == dict and "evt" in d:
-			evt = d["evt"]
-			if evt != "moveUserCursor":
-				log.debug("dispatching %s to %d clients" % (evt, numClients))
-		for c in self.connections:
-			if c != exclude:
-				c.sendData(d)
-
-	def removeConnection(self, conn):
-		if not conn in self.connections:
-			log.error("tried to remove non-present connection")
-		self.connections.remove(conn)
-		if len(self.connections) == 0:
-			self.whiteboard.errorDialog("All client connections have been closed.")
-
-class DispatcherConnection(Dispatcher):
-	def __init__(self, connection, server):
-		Dispatcher.__init__(self, sock=connection)
-		self.syncserver = server
-
-	def handle_packet(self, packet):
-		d = packet
-		log.debug("handling packet; size %d" % len(d))
-		if d == "": # connection closed from other end
-			return
-		d = pickle.loads(d)
+	def handle_ConnectionToServerLost(self):		
+		if self.questionDialog("No connection. Reconnect?\nClick 'No' to quit.", "Reconnect?"):
+			self.dispatcher.connectToServer()
+		else:
+			self.Close()
+	
+	# client/server delegate methods
+	
+	def handle_PacketReceived(self, data, sender):
+		d = pickle.loads(data)
 		if type(d) == dict and "ping" in d: # ignore pings
 			return
 		if type(d) == dict and "evt" in d:
 			# forward event to other clients
-			self.syncserver.dispatch(d, exclude=self)
+			if self.isServer:
+				self.dispatch(exclude=sender, **d)
 			# handle in own player
-			self.syncserver.whiteboard.handleNetworkEvent(d)
+			self.handleNetworkEvent(d)
+	
+	def setDispatcher(self, dispatcher):
+		self.dispatcher = dispatcher
 
-	def remove(self):
-		log.info("client connection dropped")
-		self.syncserver.removeConnection(self)
-
-	def handle_close(self):
-		self.remove()
-		self.close()
-
-	def sendData(self, d):
-		self.send(pickle.dumps(d))
-
-class SyncClient(Dispatcher):
-	def __init__(self, server, port, **wbcons):
-		Dispatcher.__init__(self)
-		self.serverAddress = (server, port)
-		self.connectedToServer = self.connectingToServer = False
-		self.connectToServer()
-		# create actual player
-		self.whiteboard = DispatchingWhiteboard("wYPeboard client", self, False, **wbcons)
-
-	def connectToServer(self):
-		log.info("connecting to %s..." % str(self.serverAddress))
-		self.connectingToServer = True
-		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.connect(self.serverAddress)
-
-	def handle_connect(self):
-		log.info("connected to %s" % str(self.serverAddress))
-		self.connectingToServer = False
-		self.connectedToServer = True
-
-		self.whiteboard.Show()
-
-		# register user
-		self.whiteboard.dispatch(evt="addUser", args=(self.whiteboard.userName,))
-
-	def handle_packet(self, packet):
-		d = packet
-		if d == "": # server connection lost
-			return
-		d = pickle.loads(d)
-		if type(d) == dict and "evt" in d:
-			self.whiteboard.handleNetworkEvent(d)
-
-	def handle_close(self):
-		self.close()
-
-	def close(self):
-		log.info("connection closed")
-		self.connectedToServer = False
-		asyncore.dispatcher.close(self)
-		if self.whiteboard.questionDialog("No connection. Reconnect?\nClick 'No' to quit.", "Reconnect?"):
-			self.connectToServer()
-		else:
-			self.whiteboard.Close()
-
-	def dispatch(self, d):
-		if not self.connectedToServer:
-			return
-		if not (type(d) == dict and "ping" in d):
-			pass
-		self.send(pickle.dumps(d))
-
-def spawnNetworkThread():
-	networkThread = threading.Thread(target=lambda:asyncore.loop())
-	networkThread.daemon = True
-	networkThread.start()
-
-def startServer(port, **wbcons):
-	log.info("serving on port %d" % port)
-	server = SyncServer(port, **wbcons)
-	spawnNetworkThread()
-	server.whiteboard.Show()
-	return server
-
-def startClient(server, port, **wbcons):
-	log.info("connecting to %s:%d" % (server, port))
-	client = SyncClient(server, port, **wbcons)
-	spawnNetworkThread()
-	return client
 
 if __name__=='__main__':
 	app = wx.App(False)
@@ -283,12 +147,14 @@ if __name__=='__main__':
 	size = (800, 600)
 	file = None
 	if len(argv) in (2, 3) and argv[0] == "serve":
+		whiteboard = DispatchingWhiteboard("wYPeboard server", True, canvasSize=size)
 		port = int(argv[1])
-		startServer(port, canvasSize=size)
+		startServer(port, whiteboard)
+		whiteboard.Show()
 	elif len(argv) in (3, 4) and argv[0] == "connect":
 		server = argv[1]
 		port = int(argv[2])
-		startClient(server, port, canvasSize=size)
+		startClient(server, port, DispatchingWhiteboard("wYPeboard client", False, canvasSize=size))
 	else:
 		appName = "sync.py"
 		print "\nwYPeboard\n\n"
