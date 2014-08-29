@@ -36,13 +36,13 @@ log.setLevel(logging.DEBUG)
 
 class DispatchingWhiteboard(Whiteboard):
 	def __init__(self, title, isServer, **kwargs):
-		Whiteboard.__init__(self, title, **kwargs)
 		self.isServer = isServer
 		self.lastPing = t.time()
-		self.Centre()
 		self.lastCursorMoveTime = t.time()
 		self.userName = "user " + str(t.time())
 		self.remoteUserCursorUpdateInterval = 0.1
+		Whiteboard.__init__(self, title, **kwargs)
+		self.Centre()
 	
 	def onObjectCreationCompleted(self, object):
 		self.dispatch(evt="addObject", args=(object.serialize(),))
