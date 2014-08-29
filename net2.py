@@ -57,10 +57,10 @@ class SyncFactory(Factory):
         return SyncProtocol(True, self.delegate, parent=self.server)
 
 class SyncServer(object):
-    def __init__(self, delegate):
+    def __init__(self, port, delegate):
         print "serving"
         self.connections = []
-        endpoint = TCP4ServerEndpoint(reactor, 8080)
+        endpoint = TCP4ServerEndpoint(reactor, port)
         delegate.setDispatcher(self)
         endpoint.listen(SyncFactory(delegate, self))
     
@@ -73,11 +73,11 @@ class SyncServer(object):
         self.connections.append(conn)
 
 class SyncClient(object):
-    def __init__(self, delegate):
+    def __init__(self, server, port, delegate):
         delegate.setDispatcher(self)
         self.delegate = delegate
         print "connecting to server"
-        point = TCP4ClientEndpoint(reactor, "localhost", 8080)
+        point = TCP4ClientEndpoint(reactor, server, port)
         self.protocol = SyncProtocol(False, delegate)
         d = connectProtocol(point, self.protocol)
         print "waiting for callback"
@@ -92,13 +92,13 @@ class SyncClient(object):
         self.protocol.dispatch(d)
 
 def startServer(port, delegate, wxApp):
-    SyncServer(delegate)
+    SyncServer(port, delegate)
     delegate.handle_ServerLaunched()
     reactor.registerWxApp(wxApp)    
     reactor.run()
 
 def startClient(server, port, delegate, wxApp):
-    SyncClient(delegate)
+    SyncClient(server, port, delegate)
     reactor.registerWxApp(wxApp)
     reactor.run()
 
