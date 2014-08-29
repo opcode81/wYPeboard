@@ -66,8 +66,8 @@ class DispatchingWhiteboard(Whiteboard):
 	def moveUserCursor(self, userName, pos):
 		sprite = self.viewer.userCursors.get(userName)
 		if sprite is None: return
-		#sprite.animateMovement(pos, self.remoteUserCursorUpdateInterval)
-		sprite.pos = pos
+		sprite.animateMovement(pos, self.remoteUserCursorUpdateInterval)
+		#sprite.pos = pos
 
 	def _deserialize(self, s):
 		if not type(s) == str:
@@ -103,6 +103,9 @@ class DispatchingWhiteboard(Whiteboard):
 
 	# server delegate methods
 	
+	def handle_ServerLaunched(self):
+		self.Show()
+	
 	def handle_ClientConnected(self, conn):
  		conn.sendData(dict(evt="addUser", args=(self.userName,)))
 		conn.sendData(dict(evt="setObjects", args=([o.serialize() for o in self.getObjects()],)))
@@ -137,8 +140,7 @@ class DispatchingWhiteboard(Whiteboard):
 	
 	def setDispatcher(self, dispatcher):
 		self.dispatcher = dispatcher
-
-
+	
 if __name__=='__main__':
 	app = wx.App(False)
 
@@ -149,12 +151,12 @@ if __name__=='__main__':
 	if len(argv) in (2, 3) and argv[0] == "serve":
 		whiteboard = DispatchingWhiteboard("wYPeboard server", True, canvasSize=size)
 		port = int(argv[1])
-		startServer(port, whiteboard)
-		whiteboard.Show()
+		startServer(port, whiteboard, app)
+		#whiteboard.Show()
 	elif len(argv) in (3, 4) and argv[0] == "connect":
 		server = argv[1]
 		port = int(argv[2])
-		startClient(server, port, DispatchingWhiteboard("wYPeboard client", False, canvasSize=size))
+		startClient(server, port, DispatchingWhiteboard("wYPeboard client", False, canvasSize=size), app)
 	else:
 		appName = "sync.py"
 		print "\nwYPeboard\n\n"
@@ -163,4 +165,4 @@ if __name__=='__main__':
 		print "   client:  %s connect <server> <port>" % appName
 		sys.exit(1)
 
-	app.MainLoop()
+	#app.MainLoop()

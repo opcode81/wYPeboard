@@ -146,14 +146,15 @@ def spawnNetworkThread():
     networkThread.daemon = True
     networkThread.start()
 
-def startServer(port, delegate):
+def startServer(port, delegate, wxApp):
     log.info("serving on port %d" % port)
     server = SyncServer(port, delegate)
     spawnNetworkThread()
-    return server
+    delegate.handle_ServerLaunched()
+    wxApp.MainLoop()
 
-def startClient(server, port, delegate):
+def startClient(server, port, delegate, wxApp):
     log.info("connecting to %s:%d" % (server, port))
     client = SyncClient(server, port, delegate)
     spawnNetworkThread()
-    return client
+    wxApp.MainLoop()
