@@ -29,7 +29,7 @@ import objects
 import numpy
 import time
 import logging
-from net2 import *
+from net import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -107,8 +107,8 @@ class DispatchingWhiteboard(Whiteboard):
 		self.Show()
 	
 	def handle_ClientConnected(self, conn):
- 		conn.sendData(dict(evt="addUser", args=(self.userName,)))
-		conn.sendData(dict(evt="setObjects", args=([o.serialize() for o in self.getObjects()],)))
+ 		conn.dispatch(dict(evt="addUser", args=(self.userName,)))
+		conn.dispatch(dict(evt="setObjects", args=([o.serialize() for o in self.getObjects()],)))
 	
 	def handle_AllClientConnectionsLost(self):
 		self.errorDialog("All client connections have been closed.")

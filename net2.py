@@ -26,6 +26,7 @@ class SyncProtocol(Protocol):
         print "connection made"
         if self.isServer:
             self.parent.addConnection(self)
+            self.delegate.handle_ClientConnected(self)
         else:
             self.delegate.handle_ConnectedToServer()            
     
