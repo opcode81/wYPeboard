@@ -65,7 +65,6 @@ class BaseObject(sprite.Sprite):
         # update the sprite's drawing position relative to the camera
         #self.rect.center = self.pos - game.camera.pos
         self.rect.topleft = self.pos - game.camera.pos
-
     
     def collide(self, group, doKill=False, collided=None):
         return sprite.spritecollide(self, group, doKill, collided)
@@ -82,7 +81,8 @@ class BaseObject(sprite.Sprite):
             "class": "%s.%s" % (self.__class__.__module__, self.__class__.__name__)            
         }
         for member in self.persistentMembers:
-            d[member] = self._serializeMember(member)
+            if hasattr(self, member):
+                d[member] = self._serializeMember(member)
         return d
 
     def _serializeMember(self, name):
