@@ -164,8 +164,9 @@ class ScribbleRenderer(object):
         self.colour = scribble.colour
         self.lineWidth = scribble.lineWidth
         surface = pygame.Surface((self.margin, self.margin))#, pygame.SRCALPHA)
-        surface.fill((255, 0, 255))
-        surface.set_colorkey((255, 0, 255))
+        self.backgroundColour = (255, 0, 255)
+        surface.fill(self.backgroundColour)
+        surface.set_colorkey(self.backgroundColour)
         self.surface = surface
         self.isFirstPoint = True
         self.obj = scribble
@@ -224,8 +225,8 @@ class ScribbleRenderer(object):
         if newWidth > oldWidth or newHeight > oldHeight:
             #print "newDim: (%d, %d)" % (newWidth, newHeight)
             surface = pygame.Surface((newWidth, newHeight))#, pygame.SRCALPHA)
-            surface.fill((255, 0, 255))
-            surface.set_colorkey((255, 0, 255))
+            surface.fill(self.backgroundColour)
+            surface.set_colorkey(self.backgroundColour)
             surface.blit(self.surface, (padLeft, padTop))
             self.surface = surface
 
@@ -252,6 +253,7 @@ class ScribbleRenderer(object):
         pos2 = numpy.array([x, y]) + self.translateOrigin + marginTranslate
         #print "drawing from %s to %s" % (str(pos1), str(pos2))
         pygame.draw.line(self.surface, self.colour, pos1, pos2, self.lineWidth)
+        #pygame.draw.aaline(self.surface, self.colour, pos1, pos2)
         self.lineStartPos = numpy.array([x, y])
 
     def end(self):
