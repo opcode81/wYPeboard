@@ -43,6 +43,7 @@ class DispatchingWhiteboard(Whiteboard):
 		self.remoteUserCursorUpdateInterval = 0.1
 		Whiteboard.__init__(self, title, **kwargs)
 		self.Centre()
+		self.connId2UserName = {}
 	
 	def onObjectCreationCompleted(self, object):
 		self.dispatch(evt="addObject", args=(object.serialize(),))
@@ -109,6 +110,15 @@ class DispatchingWhiteboard(Whiteboard):
 	def handle_ClientConnected(self, conn):
  		conn.dispatch(dict(evt="addUser", args=(self.userName,)))
 		conn.dispatch(dict(evt="setObjects", args=([o.serialize() for o in self.getObjects()],)))
+
+	def handle_ClientConnectionLost(self, conn):
+		log.info("client connection lost: %s", conn)
+		userName = self.connId2UserName.get(id(conn))
+		if userName is not None:
+			log.info("connection of user '%s' closed", userName)
+			self.deleteUser(userName)
+		else:
+			log.warning("connection closed, unknown user name")
 	
 	def handle_AllClientConnectionsLost(self):
 		self.errorDialog("All client connections have been closed.")
@@ -119,22 +129,26 @@ class DispatchingWhiteboard(Whiteboard):
 		self.Show()
 		self.dispatch(evt="addUser", args=(self.userName,))
 
-	def handle_ConnectionToServerLost(self):		
+	def handle_ConnectionToServerLost(self):
+		self.deleteAllUsers()		
 		if self.questionDialog("No connection. Reconnect?\nClick 'No' to quit.", "Reconnect?"):
-			self.dispatcher.connectToServer()
+			self.dispatcher.reconnect()
 		else:
 			self.Close()
 	
 	# client/server delegate methods
 	
-	def handle_PacketReceived(self, data, sender):
+	def handle_PacketReceived(self, data, conn):
 		d = pickle.loads(data)
 		if type(d) == dict and "ping" in d: # ignore pings
 			return
 		if type(d) == dict and "evt" in d:
+			if d["evt"] == "addUser":
+				log.info("addUser from %s with name '%s'", conn, d["args"][0])
+				self.connId2UserName[id(conn)] = d["args"][0]
 			# forward event to other clients
 			if self.isServer:
-				self.dispatch(exclude=sender, **d)
+				self.dispatch(exclude=conn, **d)
 			# handle in own player
 			self.handleNetworkEvent(d)
 	

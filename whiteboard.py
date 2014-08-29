@@ -174,6 +174,15 @@ class Viewer(object):
         self.userCursors[name] = sprite
         return sprite
 
+    def deleteUser(self, name):
+        sprite = self.userCursors.get(name)
+        if sprite is not None:
+            sprite.kill()
+    
+    def deleteAllUsers(self):
+        for name in self.userCursors:
+            self.deleteUser(name)
+
     def moveUserCursor(self, userName, pos):
         sprite = self.userCursors.get(userName)
         if sprite is not None:
@@ -661,6 +670,12 @@ class Whiteboard(wx.Frame):
 
     def addUser(self, name):
         self.viewer.addUser(name)
+    
+    def deleteUser(self, name):
+        self.viewer.deleteUser(name)
+    
+    def deleteAllUsers(self):
+        self.viewer.deleteAllUsers()
 
     def moveUserCursor(self, userName, pos):
         self.viewer.moveUserCursor(userName, pos)

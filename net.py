@@ -68,12 +68,13 @@ class SyncServer(Dispatcher):
                 log.debug("dispatching %s to %d clients" % (evt, numClients))
         for c in self.connections:
             if c != exclude:
-                c.sendData(d)
+                c.dispatch(d)
 
     def removeConnection(self, conn):
         if not conn in self.connections:
             log.error("tried to remove non-present connection")
         self.connections.remove(conn)
+        self.delegate.handle_ClientConnectionLost(conn)
         if len(self.connections) == 0:
             self.delegate.handle_AllClientConnectionsLost()
 
@@ -96,7 +97,7 @@ class DispatcherConnection(Dispatcher):
         self.remove()
         self.close()
 
-    def sendData(self, d):
+    def dispatch(self, d):
         self.send(pickle.dumps(d))
 
 class SyncClient(Dispatcher):
@@ -133,6 +134,8 @@ class SyncClient(Dispatcher):
         self.connectedToServer = False
         asyncore.dispatcher.close(self)
         self.delegate.handle_ConnectionToServerLost()
+    
+    # connection interface
 
     def dispatch(self, d, exclude=None):
         if not self.connectedToServer:
@@ -140,6 +143,10 @@ class SyncClient(Dispatcher):
         if not (type(d) == dict and "ping" in d):
             pass
         self.send(pickle.dumps(d))
+    
+    def reconnect(self):
+        self.connectToServer()
+        
 
 def spawnNetworkThread():
     networkThread = threading.Thread(target=lambda:asyncore.loop())
