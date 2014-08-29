@@ -415,11 +415,11 @@ class TextTool(Tool):
                     self.wb.addObject(obj)
                     self.wb.onObjectCreationCompleted(obj)
             else:
-                if text == "":
-                    pass # TODO delete object
+                if text == "": # delete object
+                    self.wb.deleteObjects(obj.id)
                 else:
                     obj.setText(text)
-                    # TODO transfer changed text
+                    self.wb.onObjectUpdated(obj.id, "setText", (text,))
 
     class TextEditDialog(wx.Dialog):
         def __init__(self, parent, text="", **kw):
