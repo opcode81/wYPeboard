@@ -12,7 +12,6 @@ import platform
 
 # deferred pygame imports
 global pygame
-global canvas
 global renderer
 global objects
 
@@ -31,7 +30,6 @@ class SDLPanel(wx.Panel):
             os.environ['SDL_WINDOWID'] = str(self.GetHandle())
             os.environ['SDL_VIDEODRIVER'] = 'windib'
         import pygame  # this has to happen after setting the environment variables.
-        import canvas
         import renderer
         import objects
         pygame.display.init()   
@@ -67,10 +65,8 @@ class Viewer(object):
         self.screen = pygame.display.set_mode(size, pygame.RESIZABLE)
         self.width, self.height = size
         self.running = False
-        self.renderer = renderer.GameRenderer(self)
+        self.renderer = renderer.WhiteboardRenderer(self)
         self.camera = Camera((0, 0), self)
-        self.canvas = canvas.Canvas(self)
-        self.renderer.add(self.canvas)
         self.app = app
         self.objectsById = {}
         self.userCursors = {}
@@ -146,11 +142,11 @@ class Viewer(object):
             self.addObject(o)
 
     def getObjects(self):
-        return self.canvas.userObjects.sprites()
+        return self.renderer.userObjects.sprites()
 
     def addObject(self, object):
         self.objectsById[object.id] = object
-        self.canvas.add(object)
+        self.renderer.add(object)
 
     def deleteObjects(self, *ids):
         deletedIds = []
@@ -300,7 +296,7 @@ class SelectTool(Tool):
         if self.selectMode:
             width = self.pos2[0] - self.pos1[0]
             height = self.pos2[1] - self.pos1[1]
-            objs = filter(lambda o: o.rect.colliderect(pygame.Rect(self.pos1[0], self.pos1[1], width, height)), self.viewer.canvas.userObjects.sprites())
+            objs = filter(lambda o: o.rect.colliderect(pygame.Rect(self.pos1[0], self.pos1[1], width, height)), self.viewer.renderer.userObjects.sprites())
             log.debug("selected: %s", str(objs))
             self.selectedObjects = objs            
             self.selectionChooserRect.kill()
@@ -341,7 +337,7 @@ class EraserTool(Tool):
 
     def erase(self, x, y):
         x, y = self.screenPoint(x, y)
-        sprites = self.viewer.canvas.userObjects.sprites() # TODO
+        sprites = self.viewer.renderer.userObjects.sprites() # TODO
         #log.debug(sprites
         matches = filter(lambda o: o.rect.collidepoint((x, y)), sprites)
         log.debug("eraser matches: %s", matches)
@@ -412,7 +408,7 @@ class TextTool(Tool):
     
     def enterText(self, x, y):
         sx, sy = self.screenPoint(x, y)
-        textSprites = filter(lambda o: isinstance(o, objects.Text), self.viewer.canvas.userObjects.sprites()) 
+        textSprites = filter(lambda o: isinstance(o, objects.Text), self.viewer.renderer.userObjects.sprites()) 
         matches = filter(lambda o: o.rect.collidepoint((sx, sy)), textSprites)
         obj = matches[0] if len(matches) > 0 else None 
         dlg = TextTool.TextEditDialog(self.wb, "" if obj is None else obj.text)
