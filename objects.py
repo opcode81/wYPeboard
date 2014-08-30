@@ -5,6 +5,7 @@ import numpy
 import objects
 import pickle
 import threading
+import aaline
 
 def deserialize(s, game):
     d = pickle.loads(s)
@@ -13,7 +14,7 @@ def deserialize(s, game):
 class BaseObject(sprite.Sprite):
     ''' basic sprite object '''
     
-    def __init__(self, d, game, persistentMembers = None, isUserObject=False, layer=0):
+    def __init__(self, d, game, persistentMembers = None, isUserObject=False, layer=1):
         self.isUserObject = isUserObject
         
         if persistentMembers is None: persistentMembers = []
@@ -164,7 +165,7 @@ class ScribbleRenderer(object):
         self.colour = scribble.colour
         self.lineWidth = scribble.lineWidth
         surface = pygame.Surface((self.margin, self.margin))#, pygame.SRCALPHA)
-        self.backgroundColour = (255, 0, 255)
+        self.backgroundColour = (255, 255, 255)
         surface.fill(self.backgroundColour)
         surface.set_colorkey(self.backgroundColour)
         self.surface = surface
@@ -253,7 +254,7 @@ class ScribbleRenderer(object):
         pos2 = numpy.array([x, y]) + self.translateOrigin + marginTranslate
         #print "drawing from %s to %s" % (str(pos1), str(pos2))
         pygame.draw.line(self.surface, self.colour, pos1, pos2, self.lineWidth)
-        #pygame.draw.aaline(self.surface, self.colour, pos1, pos2)
+        #aaline.aaline(self.surface, self.colour, pos1, pos2, self.lineWidth)
         self.lineStartPos = numpy.array([x, y])
 
     def end(self):
