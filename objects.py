@@ -282,6 +282,9 @@ class Scribble(Image):
 class PointBasedScribble(Scribble):
     ''' a point-based scribble sprite, which, when persisted, is reconstructed from the individual points '''
     def __init__(self, d, game, startPoint=None):
+        pos = None
+        if "pos" in d:
+            pos = self._deserializeValue("pos", d["pos"])
         if startPoint is None:
             if "points" in d and len(d["points"]) > 0:
                 startPoint = d["points"][0]
@@ -296,6 +299,8 @@ class PointBasedScribble(Scribble):
             self.points = []
         else:
             Scribble.addPoints(self, self.points)
+        if pos is not None:
+            self.pos = pos
     
     def addPoints(self, points):
         self.points.extend(points)
