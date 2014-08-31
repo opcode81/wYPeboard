@@ -73,6 +73,14 @@ class Viewer(object):
         self.isLeftMouseButtonDown = False
         self.scroll = False
         self.activeTool = None
+        pygame.mouse.set_visible(False)
+        self.mouseCursors = {}
+        self.mouseCursors["arrow"] = objects.ImageFromResource(os.path.join("img", "Arrow.png"), self, layer=1000, ppAlpha=True)
+        self.mouseCursors["pen"] = objects.ImageFromResource(os.path.join("img", "Handwriting.png"), self, layer=1000, ppAlpha=True)
+        self.mouseCursors["text"] = objects.ImageFromResource(os.path.join("img", "IBeam.png"), self, layer=1000, ppAlpha=True)
+        self.mouseCursor = self.mouseCursors["arrow"]
+        self.renderer.add(self.mouseCursor)
+        self.haveMouseFocus = False        
 
     def update(self):
         self.camera.update(self)
@@ -115,6 +123,14 @@ class Viewer(object):
                             self.screen = pygame.display.set_mode(event.size, pygame.RESIZABLE)
                             self.width, self.height = event.size
                             self.renderer.setBackgroundSize(event.size)
+                            
+                        elif event.type == pygame.ACTIVEEVENT:
+                            if event.state == 1:
+                                self.haveMouseFocus = event.gain
+                                if event.gain:
+                                    self.renderer.add(self.mouseCursor)
+                                else:
+                                    self.mouseCursor.kill()
     
                     self.update()
                     self.draw()
@@ -133,7 +149,16 @@ class Viewer(object):
         if self.activeTool is not None:
             self.activeTool.deactivate()
         self.activeTool = tool
+        self.setMouseCursor(tool.mouseCursor)
         tool.activate()
+    
+    def setMouseCursor(self, cursorName):
+        if cursorName not in self.mouseCursors:
+            cursorName = "arrow"
+        self.mouseCursor.kill()
+        self.mouseCursor = self.mouseCursors[cursorName]
+        if self.haveMouseFocus:
+            self.renderer.add(self.mouseCursor) 
 
     def setObjects(self, objects):
         for o in self.getObjects():
@@ -165,7 +190,7 @@ class Viewer(object):
                 obj.offset(*offset)
 
     def addUser(self, name):
-        sprite = objects.ImageFromResource(os.path.join("img", "HandPointer.png"), {"rect": pygame.Rect(0, 0, 0, 0)}, self, layer=1000)
+        sprite = objects.ImageFromResource(os.path.join("img", "HandPointer.png"), self, layer=1000, ppAlpha=True)
         self.addObject(sprite)
         self.userCursors[name] = sprite
         return sprite
@@ -206,6 +231,7 @@ class Viewer(object):
 
     def onMouseMove(self, x, y, dx, dy):
         pos = numpy.array([x, y]) + self.camera.pos
+        self.mouseCursor.pos = pos
 
         if self.scroll:
             self.camera.offset(numpy.array([-dx, -dy]))
@@ -222,6 +248,7 @@ class Tool(object):
         self.viewer = wb.viewer
         self.camera = wb.viewer.camera
         self.obj = None
+        self.mouseCursor = "arrow"
 
     def toolbarItem(self, parent, onActivate):
         btn = wx.Button(parent, label=self.name)
@@ -354,6 +381,7 @@ class PenTool(Tool):
         self.lineWidth = 3
         self.syncWhileDrawing = True
         self.lastProcessTime = 0
+        self.mouseCursor = "pen"
 
     def startPos(self, x, y):
         self.pointBuffer = []
@@ -402,6 +430,7 @@ class ColourTool(Tool):
 class TextTool(Tool):
     def __init__(self, wb):
         Tool.__init__(self, "text", wb)
+        self.mouseCursor = "text"
     
     def end(self, x, y):
         wx.CallAfter(self.enterText, x, y)

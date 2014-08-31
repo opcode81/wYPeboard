@@ -33,7 +33,7 @@ class BaseObject(sprite.Sprite):
         #if hasattr(self, "wrect"):
         #    self.rect = self.wrect.copy()
         
-        if not hasattr(self, "pos"):
+        if not hasattr(self, "pos") and hasattr(self, "rect"):
             #self.pos = self.rect.center = numpy.array(self.wrect.center)
             self.pos = self.rect.topleft = numpy.array(self.rect.topleft)
     
@@ -132,8 +132,8 @@ class Image(BaseObject):
         if persistentMembers is None: persistentMembers = []
         BaseObject.__init__(self, d, game, persistentMembers=persistentMembers+["image"], **kwargs)
 
-    def setSurface(self, surface):
-        self.image = surface.convert()
+    def setSurface(self, surface, ppAlpha = False):
+        self.image = surface.convert() if not ppAlpha else surface.convert_alpha()
         self.rect = self.image.get_rect()
 
     def _serializeValue(self, name, value):
@@ -154,10 +154,10 @@ class Image(BaseObject):
         return super(Image, self)._deserializeValue(name, value)
 
 class ImageFromResource(Image):
-    def __init__(self, filename, d, game, **kwargs):
-        Image.__init__(self, d, game, **kwargs)
+    def __init__(self, filename, game, ppAlpha=False, **kwargs):
+        Image.__init__(self, {}, game, **kwargs)        
         surface = pygame.image.load(filename)
-        self.setSurface(surface)
+        self.setSurface(surface, ppAlpha=ppAlpha)
 
 class ScribbleRenderer(object):
     def __init__(self, scribble):    
