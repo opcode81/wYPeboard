@@ -29,7 +29,7 @@ import objects
 import numpy
 import time
 import logging
-from net2 import *
+from net import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -78,11 +78,16 @@ class DispatchingWhiteboard(Whiteboard):
 	def addObject(self, object):
 		super(DispatchingWhiteboard, self).addObject(self._deserialize(object))
 	
-	def setObjects(self, objects):
+	def setObjects(self, objects, dispatch=True):
 		log.debug("setObjects with %d objects", len(objects))
 		objects = map(lambda o: self._deserialize(o), objects)
 		super(DispatchingWhiteboard, self).setObjects(objects)
-
+		if dispatch:
+			self.dispatchSetObjects(self.dispatcher)
+	
+	def dispatchSetObjects(self, dispatcher):
+		dispatcher.dispatch(dict(evt="setObjects", args=([o.serialize() for o in self.getObjects()], False)))
+	
 	def updateObject(self, objectId, operation, args):
 		obj = self.viewer.objectsById.get(objectId)
 		if obj is None: return
@@ -109,7 +114,7 @@ class DispatchingWhiteboard(Whiteboard):
 	
 	def handle_ClientConnected(self, conn):
  		conn.dispatch(dict(evt="addUser", args=(self.userName,)))
-		conn.dispatch(dict(evt="setObjects", args=([o.serialize() for o in self.getObjects()],)))
+ 		self.dispatchSetObjects(conn)
 
 	def handle_ClientConnectionLost(self, conn):
 		log.info("client connection lost: %s", conn)
