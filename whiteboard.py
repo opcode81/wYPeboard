@@ -570,6 +570,7 @@ class Whiteboard(wx.Frame):
         ]
         self.toolKeys = {
             (pygame.K_p, pygame.KMOD_NONE): self.penTool,
+            (pygame.K_d, pygame.KMOD_NONE): self.penTool,
             (pygame.K_r, pygame.KMOD_NONE): self.rectTool,
             (pygame.K_e, pygame.KMOD_NONE): self.eraserTool,
             (pygame.K_s, pygame.KMOD_NONE): self.selectTool,
