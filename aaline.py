@@ -1,3 +1,5 @@
+# (C) 2014 by Dominik Jain (djain@gmx.net)
+
 import pygame
 
 def aaline(surface, colour, pos1, pos2, lineWidth=3):

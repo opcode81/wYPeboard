@@ -1,3 +1,5 @@
+# (C) 2014 by Dominik Jain (djain@gmx.net)
+
 import os
 import pygame
 from pygame import sprite

@@ -1,3 +1,5 @@
+# (C) 2014 by Dominik Jain (djain@gmx.net)
+
 import wx
 from twisted.internet import wxreactor
 wxreactor.install()
