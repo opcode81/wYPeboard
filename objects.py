@@ -34,13 +34,18 @@ class BaseObject(sprite.Sprite):
             if member in d:
                 self.__dict__[member] = self._deserializeValue(member, d[member])
         
-        if not hasattr(self, "pos") and hasattr(self, "rect"):
-            if self.alignment == Alignment.TOP_LEFT:
-                self.pos = self.rect.topleft
-            elif self.alignment == Alignment.CENTRE:
-                self.pos = self.rect.center
-            elif self.alignment == Alignment.BOTTOM_LEFT:
-                self.pos = self.rect.bottomleft
+        if not hasattr(self, "pos"):
+            if hasattr(self, "rect"):
+                if self.alignment == Alignment.TOP_LEFT:
+                    self.pos = self.rect.topleft
+                elif self.alignment == Alignment.CENTRE:
+                    self.pos = self.rect.center
+                elif self.alignment == Alignment.BOTTOM_LEFT:
+                    self.pos = self.rect.bottomleft
+                else:
+                    raise Exception("unknown alignment: %s" % self.alignment)
+            else:
+                self.pos = (0, 0)
     
     class MovementAnimationThread(threading.Thread):
         def __init__(self, obj, pos, duration):
