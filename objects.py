@@ -11,10 +11,13 @@ def deserialize(s, game):
     d = pickle.loads(s)
     return eval("%s(d, game)" % d["class"])    
 
+class Alignment(object):
+    TOP_LEFT, CENTRE, BOTTOM_LEFT = range(3)
+
 class BaseObject(sprite.Sprite):
     ''' basic sprite object '''
     
-    def __init__(self, d, game, persistentMembers = None, isUserObject=False, layer=1):
+    def __init__(self, d, game, persistentMembers = None, isUserObject=False, layer=1, alignment=Alignment.TOP_LEFT):
         self.isUserObject = isUserObject
         
         if persistentMembers is None: persistentMembers = []
@@ -23,6 +26,7 @@ class BaseObject(sprite.Sprite):
         
         sprite.Sprite.__init__(self)
 
+        self.alignment = alignment
         self.layer = layer
         self.id = time.time()
         
@@ -30,12 +34,13 @@ class BaseObject(sprite.Sprite):
             if member in d:
                 self.__dict__[member] = self._deserializeValue(member, d[member])
         
-        #if hasattr(self, "wrect"):
-        #    self.rect = self.wrect.copy()
-        
         if not hasattr(self, "pos") and hasattr(self, "rect"):
-            #self.pos = self.rect.center = numpy.array(self.wrect.center)
-            self.pos = self.rect.topleft = numpy.array(self.rect.topleft)
+            if self.alignment == Alignment.TOP_LEFT:
+                self.pos = self.rect.topleft
+            elif self.alignment == Alignment.CENTRE:
+                self.pos = self.rect.center
+            elif self.alignment == Alignment.BOTTOM_LEFT:
+                self.pos = self.rect.bottomleft
     
     class MovementAnimationThread(threading.Thread):
         def __init__(self, obj, pos, duration):
@@ -64,8 +69,13 @@ class BaseObject(sprite.Sprite):
     
     def update(self, game):
         # update the sprite's drawing position relative to the camera
-        #self.rect.center = self.pos - game.camera.pos
-        self.rect.topleft = self.pos - game.camera.pos
+        coord = self.pos - game.camera.pos
+        if self.alignment == Alignment.TOP_LEFT:
+            self.rect.topleft = coord
+        elif self.alignment == Alignment.CENTRE:
+            self.rect.center = coord
+        elif self.alignment == Alignment.BOTTOM_LEFT:
+            self.rect.bottomleft = coord
     
     def collide(self, group, doKill=False, collided=None):
         return sprite.spritecollide(self, group, doKill, collided)
