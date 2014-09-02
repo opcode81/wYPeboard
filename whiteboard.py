@@ -78,9 +78,12 @@ class Viewer(object):
         self.mouseCursors["arrow"] = objects.ImageFromResource(os.path.join("img", "Arrow.png"), self, layer=1000, ppAlpha=True)
         self.mouseCursors["pen"] = objects.ImageFromResource(os.path.join("img", "Handwriting.png"), self, layer=1000, ppAlpha=True, alignment=objects.Alignment.BOTTOM_LEFT)
         self.mouseCursors["text"] = objects.ImageFromResource(os.path.join("img", "IBeam.png"), self, layer=1000, ppAlpha=True)
-        self.mouseCursor = self.mouseCursors["arrow"]
-        self.renderer.add(self.mouseCursor)
+        self.mouseCursors["delete"] = objects.ImageFromResource(os.path.join("img", "Delete.png"), self, layer=1000, ppAlpha=True)
+        self.mouseCursors["hand"] = objects.ImageFromResource(os.path.join("img", "Hand.png"), self, layer=1000, ppAlpha=True, alignment=objects.Alignment.CENTRE)
+        self.mouseCursor = None
+        self.mouseCursorName = None
         self.haveMouseFocus = False        
+        self.setMouseCursor("arrow")
 
     def update(self):
         self.camera.update(self)
@@ -155,7 +158,8 @@ class Viewer(object):
     def setMouseCursor(self, cursorName):
         if cursorName not in self.mouseCursors:
             cursorName = "arrow"
-        self.mouseCursor.kill()
+        self.mouseCursorName = cursorName
+        if self.mouseCursor is not None: self.mouseCursor.kill()
         self.mouseCursor = self.mouseCursors[cursorName]
         if self.haveMouseFocus:
             self.renderer.add(self.mouseCursor) 
@@ -210,6 +214,8 @@ class Viewer(object):
             sprite.pos = pos
 
     def onRightMouseButtonDown(self, x, y):
+        self.prevMouseCursorName = self.mouseCursorName
+        self.setMouseCursor("hand")
         self.scroll = True
 
     def onLeftMouseButtonDown(self, x, y):
@@ -222,6 +228,7 @@ class Viewer(object):
 
     def onRightMouseButtonUp(self):
         self.scroll = False
+        self.setMouseCursor(self.prevMouseCursorName)
 
     def onLeftMouseButtonUp(self, x, y):
         self.isLeftMouseButtonDown = False
@@ -358,6 +365,7 @@ class RectTool(Tool):
 class EraserTool(Tool):
     def __init__(self, wb):
         Tool.__init__(self, "eraser", wb)
+        self.mouseCursor = "delete"
 
     def startPos(self, x, y):
         self.erase(x, y)
