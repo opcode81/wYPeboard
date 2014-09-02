@@ -124,7 +124,7 @@ class Viewer(object):
                             self.app.onKeyDown(event)
                         
                         elif event.type == pygame.VIDEORESIZE:
-                            print "resized window: ", event.size
+                            log.debug("resized window: %s", event.size)
                             self.screen = pygame.display.set_mode(event.size, pygame.RESIZABLE)
                             self.width, self.height = event.size
                             self.renderer.setBackgroundSize(event.size)
