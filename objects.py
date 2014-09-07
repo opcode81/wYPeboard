@@ -8,6 +8,9 @@ import objects
 import pickle
 import threading
 import aaline
+import logging 
+
+log = logging.getLogger(__name__)
 
 def deserialize(s, game):
     d = pickle.loads(s)
@@ -182,7 +185,7 @@ class ScribbleRenderer(object):
         self.margin = 2*scribble.lineWidth
         self.colour = scribble.colour
         self.lineWidth = scribble.lineWidth
-        surface = pygame.Surface((self.margin, self.margin), flags=pygame.SRCALPHA if self.antialiasing else 0)
+        surface = pygame.Surface((self.margin, self.margin), flags=pygame.SRCALPHA if self.antialiasing else 0) # TODO: aaline does not work with SRCALPHA!
         self.backgroundColour = (255, 0, 255) if not self.antialiasing else (255, 255, 255, 0)
         surface.fill(self.backgroundColour)
         if not self.antialiasing:
@@ -326,8 +329,9 @@ class PointBasedScribble(Scribble):
             self.pos = pos
     
     def addPoints(self, points):
-        self.points.extend(points)
+        self.points.extend(points)        
         Scribble.addPoints(self, points)
+        #log.debug("relative points: %s", map(list, [numpy.array(p)-self.pos for p in self.points]))
         
 class Text(Image):
     def __init__(self, d, game):
