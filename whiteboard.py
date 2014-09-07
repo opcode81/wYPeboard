@@ -448,27 +448,35 @@ class TextTool(Tool):
         sx, sy = self.screenPoint(x, y)
         textSprites = filter(lambda o: isinstance(o, objects.Text), self.viewer.renderer.userObjects.sprites()) 
         matches = filter(lambda o: o.rect.collidepoint((sx, sy)), textSprites)
-        obj = matches[0] if len(matches) > 0 else None 
-        dlg = TextTool.TextEditDialog(self.wb, "" if obj is None else obj.text)
+        isNewObject = False
+        if len(matches) > 0:
+            obj = matches[0]
+        else:
+            isNewObject = True
+            obj = objects.Text({"pos": (x, y), "text": "", "colour": self.wb.getColour(), "fontName": self.wb.getFontName(), "fontSize": self.wb.getFontSize()}, self.viewer)
+            self.wb.addObject(obj)
+            self.wb.onObjectCreationCompleted(obj)
+        self.obj = obj
+        dlg = TextTool.TextEditDialog(self.wb, "" if obj is None else obj.text, onChange=self.textChanged)
         if dlg.ShowModal() == wx.ID_OK:
-            text = dlg.GetValue().strip()
-            if obj is None:
-                if text != "":
-                    obj = objects.Text({"pos": (x, y), "text": text, "colour": self.wb.getColour(), "fontName": self.wb.getFontName(), "fontSize": self.wb.getFontSize()}, self.viewer)
-                    self.wb.addObject(obj)
-                    self.wb.onObjectCreationCompleted(obj)
-            else:
-                if text == "": # delete object
-                    self.wb.deleteObjects(obj.id)
-                else:
-                    obj.setText(text)
-                    self.wb.onObjectUpdated(obj.id, "setText", (text,))
+            text = dlg.GetValue()
+            if text.strip() == "": # delete object
+                self.wb.deleteObjects(obj.id)
+        else:
+            if isNewObject:
+                self.wb.deleteObjects(obj.id)
+        
+    def textChanged(self, text):
+        self.obj.setText(text)
+        self.wb.onObjectUpdated(self.obj.id, "setText", (text,))
 
     class TextEditDialog(wx.Dialog):
-        def __init__(self, parent, text="", **kw):
-            wx.Dialog.__init__(self, parent, style= wx.RESIZE_BORDER, **kw)
+        def __init__(self, parent, text="", onChange=None, **kw):
+            wx.Dialog.__init__(self, parent, style=wx.RESIZE_BORDER | wx.FRAME_TOOL_WINDOW | wx.CAPTION, **kw)
     
             self.textControl = wx.TextCtrl(self, 1, value=text, style=wx.TE_MULTILINE)
+            if onChange is not None:
+                self.textControl.Bind(wx.EVT_TEXT, lambda evt: onChange(self.GetValue()), self.textControl)
            
             hbox2 = wx.BoxSizer(wx.HORIZONTAL)
             okButton = wx.Button(self, id=wx.ID_OK, label='Ok')
