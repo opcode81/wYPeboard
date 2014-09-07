@@ -147,22 +147,40 @@ if __name__=='__main__':
 	argv = sys.argv[1:]
 	#size = (1800, 950)
 	size = (800, 600)
-	file = None
-	if len(argv) in (2, 3) and argv[0] == "serve":
-		whiteboard = DispatchingWhiteboard("wYPeboard server", True, canvasSize=size)
-		port = int(argv[1])
-		startServer(port, whiteboard, app)
-		#whiteboard.Show()
-	elif len(argv) in (3, 4) and argv[0] == "connect":
-		server = argv[1]
-		port = int(argv[2])
-		startClient(server, port, DispatchingWhiteboard("wYPeboard client", False, canvasSize=size), app)
-	else:
+	isServer = None
+	server = None
+	ipv6 = False
+	help = False
+	while len(argv) > 0:
+		a = argv[0]
+		if a == "serve" and len(argv) >= 2:
+			port = int(argv[1])
+			isServer = True
+			argv = argv[2:]
+		elif a == "connect" and len(argv) >= 3:
+			server = argv[1]
+			port = int(argv[2])
+			argv = argv[3:]
+		elif a == "--ipv6":
+			ipv6 = True
+			argv = argv[1:]
+		else:
+			print "invalid argument: %s" % a
+			help = True
+			break
+	if help:
 		appName = "sync.py"
-		print "\nwYPeboard\n\n"
+		print "\nwYPeboard\n"
 		print "usage:"
-		print "   server:  %s serve <port>" % appName
-		print "   client:  %s connect <server> <port>" % appName
+		print "   server:  %s [options] serve <port>" % appName
+		print "   client:  %s [options] connect <server> <port>" % appName
+		print "\noptions:"
+		print "   --ipv6   use IPv6 instead of IPv4"
 		sys.exit(1)
+	whiteboard = DispatchingWhiteboard("wYPeboard server" if isServer else "wYPeboard client", isServer, canvasSize=size)
+	if isServer:
+		startServer(port, whiteboard, app, ipv6=ipv6)
+	else:
+		startClient(server, port, whiteboard, app, ipv6=ipv6)
 
 	#app.MainLoop()

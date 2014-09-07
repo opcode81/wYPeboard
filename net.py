@@ -10,14 +10,18 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 class Dispatcher(asyncore.dispatcher_with_send):
-    def __init__(self, sock=None):
+    def __init__(self, ipv6=False, sock=None):
         asyncore.dispatcher_with_send.__init__(self, sock=sock)
+        self.ipv6 = ipv6
         self.terminator = "\r\n\r\n$end$\r\n\r\n"
         self.recvBuffer = ""
 
     def send(self, data):
         log.debug("sending packet; size %d" % len(data))
         asyncore.dispatcher_with_send.send(self, data + self.terminator)
+    
+    def createSocket(self):
+        self.create_socket(socket.AF_INET6 if self.ipv6 else socket.AF_INET, socket.SOCK_STREAM)
 
     def handle_read(self):
         d = self.recv(8192)
@@ -41,12 +45,12 @@ class Dispatcher(asyncore.dispatcher_with_send):
         
 
 class SyncServer(Dispatcher):
-    def __init__(self, port, delegate, **wbcons):
-        Dispatcher.__init__(self)
+    def __init__(self, port, delegate, ipv6=False):
+        Dispatcher.__init__(self, ipv6=ipv6)
         self.delegate = delegate 
         self.delegate.setDispatcher(self)
         # start listening for connections
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.createSocket()
         host = ""
         self.bind((host, port))
         self.connections = []
@@ -103,8 +107,8 @@ class DispatcherConnection(Dispatcher):
         self.send(pickle.dumps(d))
 
 class SyncClient(Dispatcher):
-    def __init__(self, server, port, delegate, **wbcons):
-        Dispatcher.__init__(self)
+    def __init__(self, server, port, delegate, ipv6=False):
+        Dispatcher.__init__(self, ipv6=ipv6)
         self.delegate = delegate
         self.delegate.setDispatcher(self)
         self.serverAddress = (server, port)
@@ -114,7 +118,7 @@ class SyncClient(Dispatcher):
     def connectToServer(self):
         log.info("connecting to %s..." % str(self.serverAddress))
         self.connectingToServer = True
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.createSocket()
         self.connect(self.serverAddress)
 
     def handle_connect(self):
@@ -155,15 +159,15 @@ def spawnNetworkThread():
     networkThread.daemon = True
     networkThread.start()
 
-def startServer(port, delegate, wxApp):
-    log.info("serving on port %d" % port)
-    server = SyncServer(port, delegate)
+def startServer(port, delegate, wxApp, ipv6=False):
+    log.info("serving on port %d, IPv6: %s" % (port, ipv6))
+    server = SyncServer(port, delegate, ipv6=ipv6)
     spawnNetworkThread()
     delegate.handle_ServerLaunched()
     wxApp.MainLoop()
 
-def startClient(server, port, delegate, wxApp):
-    log.info("connecting to %s:%d" % (server, port))
-    client = SyncClient(server, port, delegate)
+def startClient(server, port, delegate, wxApp, ipv6=False):
+    log.info("connecting to %s:%d, IPv6: %s" % (server, port, ipv6))
+    client = SyncClient(server, port, delegate, ipv6=ipv6)
     spawnNetworkThread()
     wxApp.MainLoop()
