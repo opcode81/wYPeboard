@@ -178,13 +178,15 @@ class ImageFromResource(Image):
 
 class ScribbleRenderer(object):
     def __init__(self, scribble):    
+        self.antialiasing = False
         self.margin = 2*scribble.lineWidth
         self.colour = scribble.colour
         self.lineWidth = scribble.lineWidth
-        surface = pygame.Surface((self.margin, self.margin))#, pygame.SRCALPHA)
-        self.backgroundColour = (255, 255, 255)
+        surface = pygame.Surface((self.margin, self.margin), flags=pygame.SRCALPHA if self.antialiasing else 0)
+        self.backgroundColour = (255, 0, 255) if not self.antialiasing else (255, 255, 255, 0)
         surface.fill(self.backgroundColour)
-        surface.set_colorkey(self.backgroundColour)
+        if not self.antialiasing:
+            surface.set_colorkey(self.backgroundColour)
         self.surface = surface
         self.isFirstPoint = True
         self.obj = scribble
@@ -242,9 +244,10 @@ class ScribbleRenderer(object):
         # create new larger surface and copy old surface content
         if newWidth > oldWidth or newHeight > oldHeight:
             #print "newDim: (%d, %d)" % (newWidth, newHeight)
-            surface = pygame.Surface((newWidth, newHeight))#, pygame.SRCALPHA)
+            surface = pygame.Surface((newWidth, newHeight), pygame.SRCALPHA if self.antialiasing else 0)
             surface.fill(self.backgroundColour)
-            surface.set_colorkey(self.backgroundColour)
+            if not self.antialiasing:
+                surface.set_colorkey(self.backgroundColour)
             surface.blit(self.surface, (padLeft, padTop))
             self.surface = surface
 
@@ -256,7 +259,7 @@ class ScribbleRenderer(object):
             self._drawLineTo(x, y)
 
         # apply new surface
-        self.obj.setSurface(self.surface)
+        self.obj.setSurface(self.surface, ppAlpha=self.antialiasing)
 
         # reset input buffer
         self.inputBuffer = []
@@ -270,8 +273,10 @@ class ScribbleRenderer(object):
         pos1 = self.lineStartPos + self.translateOrigin + marginTranslate
         pos2 = numpy.array([x, y]) + self.translateOrigin + marginTranslate
         #print "drawing from %s to %s" % (str(pos1), str(pos2))
-        pygame.draw.line(self.surface, self.colour, pos1, pos2, self.lineWidth)
-        #aaline.aaline(self.surface, self.colour, pos1, pos2, self.lineWidth)
+        if not self.antialiasing:
+            pygame.draw.line(self.surface, self.colour, pos1, pos2, self.lineWidth)
+        else:
+            aaline.aaline(self.surface, self.colour, pos1, pos2, self.lineWidth)
         self.lineStartPos = numpy.array([x, y])
 
     def end(self):
