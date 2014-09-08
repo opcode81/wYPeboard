@@ -124,13 +124,13 @@ class SyncClient(object):
     def reconnect(self):
         self.connect()
 
-def startServer(port, delegate, wxApp):
+def startServer(port, delegate, wxApp, ipv6=False):
     SyncServer(port, delegate)
     delegate.handle_ServerLaunched()
     reactor.registerWxApp(wxApp)    
     reactor.run()
 
-def startClient(server, port, delegate, wxApp):
+def startClient(server, port, delegate, wxApp, ipv6=False):
     SyncClient(server, port, delegate)
     reactor.registerWxApp(wxApp)
     reactor.run()

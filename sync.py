@@ -10,7 +10,7 @@ import objects
 import numpy
 import time
 import logging
-from net import *
+from net2 import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
