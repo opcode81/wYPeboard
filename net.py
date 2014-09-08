@@ -20,6 +20,10 @@ class Dispatcher(asyncore.dispatcher_with_send):
     def send(self, data):
         log.debug("sending packet; size %d" % len(data))
         log.debug("hash: %s", hashlib.sha224(data).hexdigest())
+        if len(data) > 20000:
+            with file("bigdata.dat", "wb") as f:
+                f.write(data)
+                f.close()
         asyncore.dispatcher_with_send.send(self, data + self.terminator)
     
     def createSocket(self):
@@ -39,6 +43,10 @@ class Dispatcher(asyncore.dispatcher_with_send):
             packet = self.recvBuffer[:tpos]
             log.debug("received packet; size %d" % len(packet))
             log.debug("hash: %s", hashlib.sha224(packet).hexdigest())
+            if len(packet) > 20000:
+                with file("bigdata.dat", "wb") as f:
+                    f.write(packet)
+                    f.close()
             self.handle_packet(packet)
             self.recvBuffer = self.recvBuffer[tpos+len(self.terminator):]
 
