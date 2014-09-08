@@ -155,7 +155,7 @@ class SyncClient(Dispatcher):
         
 
 def spawnNetworkThread():
-    networkThread = threading.Thread(target=lambda:asyncore.loop())
+    networkThread = threading.Thread(target=lambda:asyncore.loop(timeout=0.1))
     networkThread.daemon = True
     networkThread.start()
 
