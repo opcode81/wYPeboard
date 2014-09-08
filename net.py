@@ -53,6 +53,9 @@ class Dispatcher(asyncore.dispatcher_with_send):
     def handle_packet(self, packet):
         ''' handles a read packet '''
         log.warning('unhandled packet; size %d' % len(packet))
+
+    def send(self, data):
+        self.out_buffer = self.out_buffer + data
         
 
 class SyncServer(Dispatcher):
