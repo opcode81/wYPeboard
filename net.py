@@ -5,6 +5,7 @@ import socket
 import logging
 import threading
 import pickle
+import hashlib
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -18,6 +19,7 @@ class Dispatcher(asyncore.dispatcher_with_send):
 
     def send(self, data):
         log.debug("sending packet; size %d" % len(data))
+        log.debug("hash: %s", hashlib.sha224(data).hexdigest())
         asyncore.dispatcher_with_send.send(self, data + self.terminator)
     
     def createSocket(self):
@@ -36,6 +38,7 @@ class Dispatcher(asyncore.dispatcher_with_send):
                 break
             packet = self.recvBuffer[:tpos]
             log.debug("received packet; size %d" % len(packet))
+            log.debug("hash: %s", hashlib.sha224(packet).hexdigest())
             self.handle_packet(packet)
             self.recvBuffer = self.recvBuffer[tpos+len(self.terminator):]
 
