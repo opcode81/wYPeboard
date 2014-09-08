@@ -24,7 +24,8 @@ class Dispatcher(asyncore.dispatcher_with_send):
             with file("bigdata.dat", "wb") as f:
                 f.write(data)
                 f.close()
-        asyncore.dispatcher_with_send.send(self, data + self.terminator)
+        #asyncore.dispatcher_with_send.send(self, data + self.terminator)
+        self.enqueue(data + self.terminator)
     
     def createSocket(self):
         self.create_socket(socket.AF_INET6 if self.ipv6 else socket.AF_INET, socket.SOCK_STREAM)
@@ -54,7 +55,7 @@ class Dispatcher(asyncore.dispatcher_with_send):
         ''' handles a read packet '''
         log.warning('unhandled packet; size %d' % len(packet))
 
-    def send(self, data):
+    def enqueue(self, data):
         self.out_buffer = self.out_buffer + data
         
 
