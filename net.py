@@ -26,7 +26,7 @@ class Dispatcher(asyncore.dispatcher_with_send):
                 f.close()
         # NOTE: explicitly *not* calling asyncore.dispatcher_with_send.send, because it's not thread-safe
         # Instead, we just add to the output buffer, such that actual sending will take place only from one thread: the one running in asyncore.loop
-        self.out_buffer = self.out_buffer + data
+        self.out_buffer = self.out_buffer + data + self.terminator
     
     def createSocket(self):
         self.create_socket(socket.AF_INET6 if self.ipv6 else socket.AF_INET, socket.SOCK_STREAM)
