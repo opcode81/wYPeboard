@@ -19,6 +19,7 @@ To run the source version of wYPeboard, you will need to have the following soft
 - [Python 2.x](https://www.python.org/downloads/ "Python 2.x") version 2.7 or newer
 - [wxPython](http://www.wxpython.org/ "wxPython")
 - [pygame](http://www.pygame.org/download.shtml "pygame")
+- [numpy](http://sourceforge.net/projects/numpy/files/NumPy/)
 
 ## Usage ##
 
