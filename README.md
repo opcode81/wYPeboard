@@ -1,14 +1,16 @@
 ![wYPeboard](http://www.power-xs.net/opcode/nop/software/external/wypeboard.jpg)
 
-wYPeboard is a virtual whiteboard that is optimized for usability. In particular, it features the following:
+**wYPeboard** is a virtual whiteboard that is optimized for usability. In particular, it features the following:
  
 - standard drawing functions (pen, eraser, geometric shapes, text, colour selection)
 - indicators for the positions of the cursors of remote users, so you can conveniently point at things
 - an endless canvas, i.e. you can infinitely scroll the whiteboard in all directions 
 - fully object-based editing, so you can easily move things around and partially delete content if need be
-- the state of the whiteboard can be saved and restored at any time, e.g. to continue the session at a later time 
+- persistence, i.e. the state of the whiteboard can be saved to a file and restored at any time to continue sessions at a later time 
 
-The development of wYPeboard was spawned by a lackluster experience with existing virtual whiteboard software. Since wYPeboard was written in Python, a usable version could be developed within just a few days for my own use. Python was chosen because it is multi-platform and provides a good selection of libraries that could be used as a basis. wYPeboard was specifically optimized for use under Windows and Linux.
+When combined with a voice chat application, wYPeboard is all you need to get visualize and talk about your ideas. There's just no better way to discuss time travel paradoxes with your remote friends, for example. 
+
+The development of wYPeboard was spawned by a lackluster experience with existing virtual whiteboard software. Since wYPeboard was written in Python, a usable version could be developed within just a few days for my own use. Python was chosen because it is multi-platform and provides a good selection of libraries that could be used as a basis. The wYPeboard user experience was tested under and specifically optimized for Windows and Linux.
 
 ## Prerequisites ##
 
