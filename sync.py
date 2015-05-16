@@ -179,8 +179,8 @@ if __name__=='__main__':
 		sys.exit(1)
 	whiteboard = DispatchingWhiteboard("wYPeboard server" if isServer else "wYPeboard client", isServer, canvasSize=size)
 	if isServer:
-		startServer(port, whiteboard, app, ipv6=ipv6)
+		startServer(port, whiteboard, ipv6=ipv6)
 	else:
-		startClient(server, port, whiteboard, app, ipv6=ipv6)
-
-	#app.MainLoop()
+		startClient(server, port, whiteboard, ipv6=ipv6)
+	whiteboard.startRendering()
+	app.MainLoop()

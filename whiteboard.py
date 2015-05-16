@@ -43,6 +43,7 @@ class SDLPanel(wx.Panel):
         # initialize level viewer
         self.viewer = Viewer(tplSize, parent)
 
+    def startRendering(self):
         # start pygame thread
         thread.start_new_thread(self.viewer.mainLoop, ())
 
@@ -602,6 +603,9 @@ class Whiteboard(wx.Frame):
             sizer.Add(self.pnlSDL, 1, flag=wx.EXPAND)
             self.SetSizer(sizer)
 
+    def startRendering(self):
+        self.pnlSDL.startRendering()
+
     def onSelectTool(self, tool):
         self.viewer.setActiveTool(tool)
         log.debug("selected tool %s" % tool.name)
@@ -736,6 +740,7 @@ class Whiteboard(wx.Frame):
 
 if __name__ == '__main__':
     app = wx.App(False)
-    frame = Whiteboard("wYPeboard")
-    frame.Show()
+    whiteboard = Whiteboard("wYPeboard")
+    whiteboard.startRendering()
+    whiteboard.Show()    
     app.MainLoop()
