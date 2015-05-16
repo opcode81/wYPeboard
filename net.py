@@ -16,14 +16,16 @@ class Dispatcher(asyncore.dispatcher_with_send):
         self.ipv6 = ipv6
         self.terminator = "\r\n\r\n$end$\r\n\r\n"
         self.recvBuffer = ""
+        self.__debug = False
 
     def send(self, data):
         log.debug("sending packet; size %d" % len(data))
-        log.debug("hash: %s", hashlib.sha224(data).hexdigest())
-        if len(data) > 20000:
-            with file("bigdata.dat", "wb") as f:
-                f.write(data)
-                f.close()
+        if self.__debug:
+            log.debug("hash: %s", hashlib.sha224(data).hexdigest())
+            if len(data) > 20000:
+                with file("bigdata.dat", "wb") as f:
+                    f.write(data)
+                    f.close()
         # NOTE: explicitly *not* calling asyncore.dispatcher_with_send.send, because it's not thread-safe
         # Instead, we just add to the output buffer, such that actual sending will take place only from one thread: the one running in asyncore.loop
         self.out_buffer = self.out_buffer + data + self.terminator
@@ -44,7 +46,7 @@ class Dispatcher(asyncore.dispatcher_with_send):
                 break
             packet = self.recvBuffer[:tpos]
             log.debug("received packet; size %d" % len(packet))
-            log.debug("hash: %s", hashlib.sha224(packet).hexdigest())
+            if self.__debug: log.debug("hash: %s", hashlib.sha224(packet).hexdigest())
             if len(packet) > 20000:
                 with file("bigdata.dat", "wb") as f:
                     f.write(packet)
