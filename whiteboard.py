@@ -682,6 +682,7 @@ class Whiteboard(wx.Frame):
         image = pygame.image.fromstring(data, (bmp.GetWidth(), bmp.GetHeight()), "RGB")
         obj = objects.Image({"image": image, "rect": image.get_rect()}, self.viewer, isUserObject=True)
         self.addObject(obj)
+        self.onObjectCreationCompleted(obj)
 
     def addObject(self, object):
         self.viewer.addObject(object)

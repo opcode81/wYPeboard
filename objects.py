@@ -23,7 +23,7 @@ class BaseObject(sprite.Sprite):
     ''' basic sprite object '''
     
     def __init__(self, d, game, persistentMembers = None, isUserObject=False, layer=1, alignment=Alignment.TOP_LEFT):
-        self.isUserObject = isUserObject
+        self.isUserObject = isUserObject # can be overridden below if "isUserObject" is a persistent member 
         
         if persistentMembers is None: persistentMembers = []
         self.persistentMembers = persistentMembers
@@ -148,9 +148,9 @@ class Rectangle(BaseObject):
         self.rect.height = height
 
 class Image(BaseObject):
-    def __init__(self, d, game, persistentMembers = None, **kwargs):
+    def __init__(self, d, game, persistentMembers = None, **kwargs):        
         if persistentMembers is None: persistentMembers = []
-        BaseObject.__init__(self, d, game, persistentMembers=persistentMembers+["image"], **kwargs)
+        BaseObject.__init__(self, d, game, persistentMembers=persistentMembers+["isUserObject", "image"], **kwargs)
 
     def setSurface(self, surface, ppAlpha = False):
         self.image = surface.convert() if not ppAlpha else surface.convert_alpha()
