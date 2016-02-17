@@ -22,14 +22,10 @@ class Dispatcher(asyncore.dispatcher_with_send):
         log.debug("sending packet; size %d" % len(data))
         if self.__debug:
             log.debug("hash: %s", hashlib.sha224(data).hexdigest())
-            if len(data) > 20000:
-                with file("bigdata.dat", "wb") as f:
-                    f.write(data)
-                    f.close()
         # NOTE: explicitly *not* calling asyncore.dispatcher_with_send.send, because it's not thread-safe
         # Instead, we just add to the output buffer, such that actual sending will take place only from one thread: the one running in asyncore.loop
         self.out_buffer = self.out_buffer + data + self.terminator
-    
+
     def createSocket(self):
         self.create_socket(socket.AF_INET6 if self.ipv6 else socket.AF_INET, socket.SOCK_STREAM)
 
@@ -62,7 +58,7 @@ class Dispatcher(asyncore.dispatcher_with_send):
 class SyncServer(Dispatcher):
     def __init__(self, port, delegate, ipv6=False):
         Dispatcher.__init__(self, ipv6=ipv6)
-        self.delegate = delegate 
+        self.delegate = delegate
         self.delegate.setDispatcher(self)
         # start listening for connections
         self.createSocket()
@@ -128,7 +124,7 @@ class SyncClient(Dispatcher):
         self.delegate.setDispatcher(self)
         self.serverAddress = (server, port)
         self.connectedToServer = self.connectingToServer = False
-        self.connectToServer()        
+        self.connectToServer()
 
     def connectToServer(self):
         log.info("connecting to %s..." % str(self.serverAddress))
@@ -155,7 +151,7 @@ class SyncClient(Dispatcher):
         self.connectedToServer = False
         asyncore.dispatcher.close(self)
         self.delegate.handle_ConnectionToServerLost()
-    
+
     # connection interface
 
     def dispatch(self, d, exclude=None):
@@ -164,10 +160,10 @@ class SyncClient(Dispatcher):
         if not (type(d) == dict and "ping" in d):
             pass
         self.send(pickle.dumps(d))
-    
+
     def reconnect(self):
         self.connectToServer()
-        
+
 
 def spawnNetworkThread():
     networkThread = threading.Thread(target=lambda:asyncore.loop(timeout=0.1))
