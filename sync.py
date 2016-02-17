@@ -158,6 +158,7 @@ if __name__=='__main__':
 			isServer = True
 			argv = argv[2:]
 		elif a == "connect" and len(argv) >= 3:
+			isServer = False            
 			server = argv[1]
 			port = int(argv[2])
 			argv = argv[3:]
@@ -168,7 +169,7 @@ if __name__=='__main__':
 			print "invalid argument: %s" % a
 			help = True
 			break
-	if help:
+	if help or isServer is None:
 		appName = "sync.py"
 		print "\nwYPeboard\n"
 		print "usage:"
